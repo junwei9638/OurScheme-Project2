@@ -13,9 +13,10 @@ using namespace std;
 
 struct Token {
 	string tokenName;
-	int typeNum;
+	int tokenTypeNum;
 	int tokenColumn;
 	int tokenLine;
+	int functionTypeNum;
 }; // TokenType
 
 struct Define {
@@ -32,10 +33,25 @@ struct TokenTree {
 	TokenTree *backNode;
 }; // TokenType
 
+enum FunctionType {
+  CONS, LIST,
+  FUNC_QUOTE,
+  DEFINE,
+  CAR, CDR,
+  IS_ATOM, IS_PAIR, IS_LIST, IS_NULL, IS_INT, IS_REAL, IS_NUM, IS_STR, IS_BOOL, IS_SYMBOL,
+  PLUS, MINUS, DIV, MULT,
+  NOT, AND, OR,
+  IS_GREATER, IS_GREATEREQUAL, IS_LESS, IS_LESSEQUAL, IS_EQUAL_MATH,
+  STR_APPEND, IS_STR_GREATER, IS_STR_LESS, IS_STR_EQUAL,
+  IS_EQV, IS_EQUAL,
+  BEGIN,
+  IF, COND,
+  CLEAR_ENV
+}; // FunctionType
 
-enum Type {
+enum TokenType {
 	INT, STRING, DOT, FLOAT, NIL, T, QUOTE, SYMBOL, LEFTPAREN, RIGHTPAREN
-}; // Type
+}; // TokenType
 
 enum Error {
 	LEFT_ERROR, RIGHT_ERROR, CLOSE_ERROR, EOF_ERROR, NO_ERROR, NOT_S_EXP_ERROR
@@ -56,6 +72,51 @@ string gErrorMsgName = "\0";
 int gErrorMsgType = NO_ERROR;
 int gErrorLine = 0;
 int gErrorColumn = 0;
+
+// ------------------JudgeMent Function--------------------- //
+bool ExitDetect() {
+
+	int nilExit = -1;
+	int exitNil = -1;
+	string tokenString = "\0";
+
+	for ( int i = 0 ; i < gTokens.size() ; i++ )
+		tokenString += gTokens[i].tokenName;
+
+	nilExit = (int) tokenString.find("(nil.exit)");
+	exitNil = (int) tokenString.find("(exit.nil)");
+
+	if ( tokenString == "(exit)" || nilExit != -1 || exitNil != -1 ) {
+		gIsEnd = true;
+		return true;
+	} // if
+
+
+	return false;
+} // ExitDetect()
+
+bool IsAtom( int typeNum ) {
+	if ( typeNum == SYMBOL || typeNum == INT ||
+			 typeNum == FLOAT || typeNum == STRING ||
+			 typeNum == NIL || typeNum == T )
+		return true;
+
+	else return false;
+} // IsAtom()
+
+bool IsFunction( string tokenName ) {
+	if ( tokenName == "cons" || tokenName == "list" || tokenName == "quote" || tokenName == "define" ||
+			 tokenName == "car" || tokenName == "cdr" || tokenName == "atom?" || tokenName == "pair?" ||
+			 tokenName == "list?" || tokenName == "null?" || tokenName == "integer?" || tokenName == "real?" ||
+			 tokenName == "number?" || tokenName == "string?" || tokenName == "boolean?" || tokenName == "symbol?" ||
+			 tokenName == "+" || tokenName == "-" || tokenName == "*" || tokenName == "/" || tokenName == "not" ||
+			 tokenName == "and" || tokenName == "or" || tokenName == ">" || tokenName == ">=" || tokenName == "<" ||
+			 tokenName == "<=" || tokenName == "=" || tokenName == "string-append" || tokenName == "string>?" ||
+			 tokenName == "string<?" || tokenName == "string=?" || tokenName == "eqv?" || tokenName == "equal?" ||
+			 tokenName == "begin" || tokenName == "if" || tokenName == "cond" || tokenName == "clean-environment" )
+		return true ;
+	else return false ;
+} // IsFunction()
 
 // ------------------Setting Function--------------------- //
 void InitialLineColumn() {
@@ -118,26 +179,6 @@ void GlobalVariableReset() {
 	gAtomType = 0;
 } // GlobalVariableReset()
 
-bool ExitDetect() {
-
-	int nilExit = -1;
-	int exitNil = -1;
-	string tokenString = "\0";
-
-	for ( int i = 0 ; i < gTokens.size() ; i++ )
-		tokenString += gTokens[i].tokenName;
-
-	nilExit = (int) tokenString.find("(nil.exit)");
-	exitNil = (int) tokenString.find("(exit.nil)");
-
-	if ( tokenString == "(exit)" || nilExit != -1 || exitNil != -1 ) {
-		gIsEnd = true;
-		return true;
-	} // if
-
-
-	return false;
-} // ExitDetect()
 
 
 // ------------------Get Token--------------------- //
@@ -319,7 +360,7 @@ bool GetToken() {
 	char peek = GetChar();
 
 	token.tokenName = "\0";
-	token.typeNum = 0;
+	token.tokenTypeNum = 0;
 	token.tokenColumn = 0;
 	token.tokenLine = 0;
 
@@ -384,7 +425,7 @@ bool GetToken() {
 			} // if
 		} // else
 
-		token.typeNum = gAtomType;
+		token.tokenTypeNum = gAtomType;
 		gTokens.push_back(token);
 
 		return true;
@@ -394,14 +435,6 @@ bool GetToken() {
 
 // ------------------Tree Build--------------------- //
 
-bool IsAtom( int typeNum ) {
-	if ( typeNum == SYMBOL || typeNum == INT ||
-			 typeNum == FLOAT || typeNum == STRING ||
-			 typeNum == NIL || typeNum == T )
-		return true;
-
-	else return false;
-} // IsAtom()
 
 void InitialNode() {
 	gCurrentNode->leftNode = NULL;
@@ -416,27 +449,27 @@ void InsertAtomToTree() {
 			if ( gCurrentNode->leftNode == NULL ) {                             // left node null -> insert left
 				gCurrentNode->leftToken = new Token;
 				gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
-				gCurrentNode->leftToken->typeNum = gTokens.back().typeNum;
+				gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
 			} // if
 
 			else if ( gCurrentNode->leftNode != NULL ) {                        // left node !null
 				while ( gCurrentNode->rightNode != NULL )                         // find right node null
 					gCurrentNode = gCurrentNode->backNode;
 
-				if ( gTokens[gTokens.size() - 2].typeNum != DOT ) {                 // if !dot-> create right node
+				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
 					gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
 					gCurrentNode->rightNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->rightNode;
 					InitialNode();
 					gCurrentNode->leftToken = new Token;
 					gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
-					gCurrentNode->leftToken->typeNum = gTokens.back().typeNum;
+					gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
 				} // if
 
-				else if ( gTokens[gTokens.size() - 2].typeNum == DOT ) {            // insert right token
+				else if ( gTokens[gTokens.size() - 2].tokenTypeNum == DOT ) {            // insert right token
 					gCurrentNode->rightToken = new Token;
 					gCurrentNode->rightToken->tokenName = gTokens.back().tokenName;
-					gCurrentNode->rightToken->typeNum = gTokens.back().typeNum;
+					gCurrentNode->rightToken->tokenTypeNum = gTokens.back().tokenTypeNum;
 				} // if
 			} // if
 		} // if
@@ -445,20 +478,20 @@ void InsertAtomToTree() {
 			while ( gCurrentNode->rightNode != NULL )                        // find right node null
 				gCurrentNode = gCurrentNode->backNode;
 
-			if ( gTokens[gTokens.size() - 2].typeNum != DOT ) {                 // if !dot-> create right node
+			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
 				gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
 				gCurrentNode->rightNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->rightNode;
 				InitialNode();
 				gCurrentNode->leftToken = new Token;
 				gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
-				gCurrentNode->leftToken->typeNum = gTokens.back().typeNum;
+				gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
 			} // if
 
-			else if ( gTokens[gTokens.size() - 2].typeNum == DOT ) {            // if == dot-> insert right token
+			else if ( gTokens[gTokens.size() - 2].tokenTypeNum == DOT ) {            // if == dot-> insert right token
 				gCurrentNode->rightToken = new Token;
 				gCurrentNode->rightToken->tokenName = gTokens.back().tokenName;
-				gCurrentNode->rightToken->typeNum = gTokens.back().typeNum;
+				gCurrentNode->rightToken->tokenTypeNum = gTokens.back().tokenTypeNum;
 			} // if
 		} // if
 	} // if
@@ -489,7 +522,7 @@ void BuildTree() {
 				gCurrentNode = gCurrentNode->rightNode;
 				InitialNode();
 
-				if ( gTokens[gTokens.size() - 2].typeNum != DOT ) {    // if !dot-> create left node
+				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {    // if !dot-> create left node
 					gCurrentNode->leftNode = new TokenTree;
 					gCurrentNode->leftNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->leftNode;
@@ -508,7 +541,7 @@ void BuildTree() {
 			gCurrentNode = gCurrentNode->rightNode;
 			InitialNode();
 
-			if ( gTokens[gTokens.size() - 2].typeNum != DOT ) {                 // if !dot-> create left node
+			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create left node
 				gCurrentNode->leftNode = new TokenTree;
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
@@ -523,7 +556,7 @@ void BuildTree() {
 
 
 bool SyntaxChecker() {
-	if ( IsAtom(gTokens.back().typeNum)) {
+	if ( IsAtom(gTokens.back().tokenTypeNum)) {
 		// cout << "Atom " ;
 
 		if ( gTreeRoot != NULL ) InsertAtomToTree();
@@ -531,7 +564,7 @@ bool SyntaxChecker() {
 	} // if
 
 
-	else if ( gTokens.back().typeNum == LEFTPAREN ) {
+	else if ( gTokens.back().tokenTypeNum == LEFTPAREN ) {
 
 		BuildTree();                                                 // // create node
 
@@ -546,7 +579,7 @@ bool SyntaxChecker() {
 
 			if ( gErrorMsgType != NOT_S_EXP_ERROR ) return false;
 
-			if ( gTokens.back().typeNum == DOT ) {
+			if ( gTokens.back().tokenTypeNum == DOT ) {
 				// cout << "Dot " ;
 				if ( GetToken()) {
 					if ( SyntaxChecker()) {
@@ -567,7 +600,7 @@ bool SyntaxChecker() {
 				else return false;
 			} // if
 
-			if ( gTokens.back().typeNum == RIGHTPAREN ) {
+			if ( gTokens.back().tokenTypeNum == RIGHTPAREN ) {
 				gCurrentNode = gCurrentNode->backNode;
 				return true;
 			} // if
@@ -589,22 +622,23 @@ bool SyntaxChecker() {
 
 	} // if
 
-	else if ( gTokens.back().typeNum == QUOTE ) {
+	else if ( gTokens.back().tokenTypeNum == QUOTE ) {
 		// cout << "Quote " ;
 		Token temp;
 		gTokens.pop_back();
 		temp.tokenName = "(";
-		temp.typeNum = LEFTPAREN;
+		temp.tokenTypeNum = LEFTPAREN;
 		gTokens.push_back(temp);
+		BuildTree();
 		temp.tokenName = "quote";
-		temp.typeNum = QUOTE;
+		temp.tokenTypeNum = QUOTE;
 		gTokens.push_back(temp);
-
+		InsertAtomToTree() ;
 
 		if ( GetToken()) {
 			if ( SyntaxChecker()) {
 				temp.tokenName = ")";
-				temp.typeNum = RIGHTPAREN;
+				temp.tokenTypeNum = RIGHTPAREN;
 				gTokens.push_back(temp);
 				return true;
 			} // if :push right paren
@@ -627,7 +661,7 @@ bool SyntaxChecker() {
 // ------------------Print Function--------------------- //
 
 void PrintAtom( int i ) {
-	if ( gTokens[i].typeNum == FLOAT ) {
+	if ( gTokens[i].tokenTypeNum == FLOAT ) {
 		cout << fixed << setprecision(3)
 				 << round(atof(gTokens[i].tokenName.c_str()) * 1000) / 1000 << endl;
 	} // if
@@ -636,21 +670,21 @@ void PrintAtom( int i ) {
 
 bool NeedPrint( int i, int printParenNum ) {
 	if ( i > 0 ) {
-		if ( gTokens[i].typeNum == LEFTPAREN && gTokens[i - 1].typeNum == DOT )       // . ( case
+		if ( gTokens[i].tokenTypeNum == LEFTPAREN && gTokens[i - 1].tokenTypeNum == DOT )       // . ( case
 			return false;
 
-		else if ( gTokens[i].typeNum == DOT ) {                                     // atom . Nil case
-			if ( gTokens[i + 1].typeNum == NIL ) return false;
-			if ( !IsAtom(gTokens[i + 1].typeNum)) return false;
+		else if ( gTokens[i].tokenTypeNum == DOT ) {                                     // atom . Nil case
+			if ( gTokens[i + 1].tokenTypeNum == NIL ) return false;
+			if ( !IsAtom(gTokens[i + 1].tokenTypeNum)) return false;
 		} // if
 
-		else if ( gTokens[i].typeNum == NIL && gTokens[i - 1].typeNum == DOT )         // atom . Nil case
+		else if ( gTokens[i].tokenTypeNum == NIL && gTokens[i - 1].tokenTypeNum == DOT )         // atom . Nil case
 			return false;
 
-		else if ( gTokens[i].typeNum == NIL && gTokens[i - 1].typeNum == DOT )         // atom . Nil case
+		else if ( gTokens[i].tokenTypeNum == NIL && gTokens[i - 1].tokenTypeNum == DOT )         // atom . Nil case
 			return false;
 
-		else if ( gTokens[i].typeNum == RIGHTPAREN ) {
+		else if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) {
 			if ( printParenNum > 1 ) return true;
 			else return false;
 		} // if
@@ -678,35 +712,35 @@ void PrintSExp() {
 		else {
 			if ( NeedPrint(i, printParenNum)) {
 
-				if ( gTokens[i].typeNum == RIGHTPAREN ) printParenNum--;
+				if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) printParenNum--;
 
 				if ( lineReturn ) {
 					PrintSpace(printParenNum);
 					lineReturn = false;
 				} // if
 
-				if ( gTokens[i].typeNum == QUOTE ) {
+				if ( gTokens[i].tokenTypeNum == QUOTE ) {
 					cout << gTokens[i].tokenName << endl;
 					lineReturn = true;
 				} // if
 
-				else if ( gTokens[i].typeNum == LEFTPAREN ) {
+				else if ( gTokens[i].tokenTypeNum == LEFTPAREN ) {
 					cout << gTokens[i].tokenName << " ";
 					printParenNum++;
 				} // if
 
-				else if ( gTokens[i].typeNum == RIGHTPAREN ) {
+				else if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) {
 					cout << gTokens[i].tokenName << endl;
 					lineReturn = true;
 				} // if
 
-				else if ( gTokens[i].typeNum == DOT ) {
+				else if ( gTokens[i].tokenTypeNum == DOT ) {
 					cout << gTokens[i].tokenName << endl;
 					lineReturn = true;
 				} // if
 
 
-				else if ( IsAtom(gTokens[i].typeNum)) {
+				else if ( IsAtom(gTokens[i].tokenTypeNum)) {
 					PrintAtom(i);
 					lineReturn = true;
 				} // if
@@ -741,17 +775,17 @@ void PrintErrorMessage() {
 } // PrintErrorMessage()
 
 void PrintEvaluateError() {
-
+	cout << "ERROR " ;
 } // PrintEvaluateError()
 
 // ------------------Evaluate Function--------------------- //
 
-bool IsFunction() {
-	return true ;
-} // IsFunction
 bool Evaluate( TokenTree * CurrentNode ) {
 	if ( CurrentNode != NULL) {																// if current != NULL
-		if( CurrentNode->leftToken != NULL ) cout << CurrentNode->leftToken->tokenName << " ";
+		if ( CurrentNode->leftToken != NULL ) {
+			if ( IsFunction( CurrentNode->leftToken->tokenName ) )
+				cout << CurrentNode->leftToken->tokenName << endl;
+		} // if
 		Evaluate( CurrentNode->leftNode );
 		Evaluate( CurrentNode->rightNode );
 	} // if
