@@ -750,10 +750,11 @@ bool IsFunction() {
   return true ;
 } // IsFunction
 bool Evaluate( TokenTree * CurrentNode ) {
-  if ( IsFunction() ) {
-    Evaluate( CurrentNode ) ;
-    return true ;
-  } // if
+	if ( CurrentNode != NULL) {                          // if current != NULL
+			cout << CurrentNode->leftToken << " ";
+			Evaluate( CurrentNode->leftNode );
+			Evaluate( CurrentNode->rightNode );
+	} // if
   return true ;
   
 } // Evaluate()
