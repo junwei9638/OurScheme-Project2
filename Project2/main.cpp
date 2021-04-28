@@ -755,6 +755,7 @@ bool Evaluate( TokenTree * CurrentNode ) {
 		Evaluate( CurrentNode->leftNode );
 		Evaluate( CurrentNode->rightNode );
 	} // if
+
 	return true;
 
 } // Evaluate()
