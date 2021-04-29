@@ -335,6 +335,7 @@ bool CheckParameter( TokenTree * CurrentNode, string tokenName ) {
 		else return true ;
 	} // if
 
+  return false ;
 } // CheckParameter()
 // ------------------Setting Function--------------------- //
 void SetFunctionType( int & functionType ,string tokenName ) {
@@ -1043,7 +1044,7 @@ void PrintEvaluateError() {
 bool Evaluate( TokenTree * CurrentNode ) {
 	if ( CurrentNode != NULL) {																// if current != NULL
 		if ( CurrentNode->leftToken != NULL ) {
-			if ( IsFunction( CurrentNode->leftToken->tokenName ) ){
+			if ( IsFunction( CurrentNode->leftToken->tokenName ) ) {
 				// SetFunctionType(CurrentNode->leftToken->functionType, CurrentNode->leftToken->tokenName ) ;
 				if ( CheckParameter( CurrentNode,CurrentNode->leftToken->tokenName )  )
 					cout << CurrentNode->leftToken->tokenName << endl;

@@ -14,9 +14,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "777"
-            endingLineNumber = "777"
-            landmarkName = "main()"
+            startingLineNumber = "778"
+            endingLineNumber = "778"
+            landmarkName = "BuildTree()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
