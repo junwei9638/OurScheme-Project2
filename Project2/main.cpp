@@ -41,7 +41,7 @@ enum FunctionType {
   IS_ATOM, IS_PAIR, IS_LIST, IS_NULL, IS_INT, IS_REAL, IS_NUM, IS_STR, IS_BOOL, IS_SYMBOL,
   PLUS, MINUS, DIV, MULT,
   NOT, AND, OR,
-  IS_GREATER, IS_GREATEREQUAL, IS_LESS, IS_LESSEQUAL, IS_EQUAL_MATH,
+  GREATER, GREATEREQUAL, LESS, LESSEQUAL, EQUAL,
   STR_APPEND, IS_STR_GREATER, IS_STR_LESS, IS_STR_EQUAL,
   IS_EQV, IS_EQUAL,
   BEGIN,
@@ -362,11 +362,11 @@ void SetFunctionType( int & functionType ,string tokenName ) {
 	else if ( tokenName == "not" ) functionType = NOT ;
 	else if ( tokenName == "and" ) functionType = AND ;
 	else if ( tokenName == "or" ) functionType = OR ;
-	else if ( tokenName == ">" ) functionType = IS_GREATER ;
-	else if ( tokenName == ">=" ) functionType = IS_GREATEREQUAL ;
-	else if ( tokenName == "<" ) functionType = IS_LESS ;
-	else if ( tokenName == "<=" ) functionType = IS_LESSEQUAL ;
-	else if ( tokenName == "=" ) functionType = IS_EQUAL_MATH ;
+	else if ( tokenName == ">" ) functionType = GREATER ;
+	else if ( tokenName == ">=" ) functionType = GREATEREQUAL ;
+	else if ( tokenName == "<" ) functionType = LESS ;
+	else if ( tokenName == "<=" ) functionType = LESSEQUAL ;
+	else if ( tokenName == "=" ) functionType = EQUAL ;
 	else if ( tokenName == "string-append" ) functionType = STR_APPEND ;
 	else if ( tokenName == "string>?" ) functionType = IS_STR_GREATER;
 	else if ( tokenName == "string<?" ) functionType = IS_STR_LESS ;
@@ -1039,29 +1039,244 @@ void PrintEvaluateError() {
 	cout << "ERROR " << endl ;
 } // PrintEvaluateError()
 
+void PrintDefinition( int index ) {
+  
+}  // PrintDefinition()
+
+// ------------------Functional Function--------------------- //
+
+bool Cons( TokenTree* CurrentNode ) {
+  return true ;
+}  // Cons()
+
+bool List( TokenTree* CurrentNode ) {
+  return true ;
+} // List()
+
+bool Quote( TokenTree* CurrentNode ) {
+  return true ;
+} // Quote
+
+bool Define( TokenTree* CurrentNode ) {
+  return true ;
+} // Define()
+
+bool Car( TokenTree* CurrentNode ) {
+  return true ;
+} // Car()
+
+bool Cdr( TokenTree* CurrentNode ) {
+  return true ;
+} // Cdr()
+
+bool Is_Atom( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Atom
+
+bool Is_Pair( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Pair()
+
+bool Is_List( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_List
+
+bool Is_Null( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Null
+
+bool Is_Int( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Int()
+
+bool Is_Real( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Real()
+
+bool Is_Num( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Num()
+
+bool Is_Str( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Str()
+
+bool Is_Bool( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Bool
+
+bool Is_Symbol( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Symbol()
+
+bool Plus( TokenTree* CurrentNode ) {
+  return true ;
+} // Plus()
+
+bool Minus( TokenTree* CurrentNode ) {
+  return true ;
+} // Minus
+
+bool Div( TokenTree* CurrentNode ){
+  return true ;
+} // Div()
+
+bool Mult( TokenTree* CurrentNode ) {
+  return true ;
+} // Mult()
+
+bool Not( TokenTree* CurrentNode ) {
+  return true ;
+} // Not()
+
+bool And( TokenTree* CurrentNode ) {
+  return true ;
+} // And()
+
+bool Or( TokenTree* CurrentNode ) {
+  return true ;
+} // Or()
+
+bool Greater( TokenTree* CurrentNode ) {
+  return true ;
+} // Greater()
+
+bool GreaterEqual( TokenTree* CurrentNode ) {
+  return true ;
+} // GreaterEqual()
+
+bool Less( TokenTree* CurrentNode ) {
+  return true ;
+} // Less()
+
+bool LessEqual( TokenTree* CurrentNode ) {
+  return true ;
+} // LessEqual()
+
+bool Equal( TokenTree* CurrentNode ) {
+  return true ;
+} // Equal()
+
+bool Str_Append( TokenTree* CurrentNode ) {
+  return true ;
+} // Str_Append()
+
+bool Is_Str_Greater(  TokenTree* CurrentNode) {
+  return true ;
+} // Is_Str_Greater()
+
+bool Is_Str_Less( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Str_Less()
+
+bool Is_Str_Equal( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Str_Equal()
+
+bool Is_Eqv( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Equal()
+
+bool Is_Equal( TokenTree* CurrentNode ) {
+  return true ;
+} // Is_Equal()
+
+bool Begin( TokenTree* CurrentNode ) {
+  return true ;
+} // Begin()
+
+bool If(  TokenTree* CurrentNode) {
+  return true ;
+} // If()
+
+bool Cond( TokenTree* CurrentNode ) {
+  return true ;
+} // Cond()
+
+bool Clear_Env( ){
+  gDefindSymbols.clear() ;
+  return true;
+} // Clear_Env()
+
+bool FunctionJudge( TokenTree* CurrentNode, string tokenName  ) {
+  if ( tokenName == "cons" ) return Cons( CurrentNode ) ;
+  else if ( tokenName == "list" ) return List( CurrentNode ) ;
+  else if ( tokenName == "quote" ) return Quote( CurrentNode ) ;
+  else if ( tokenName == "define" ) return Define( CurrentNode ) ;
+  else if ( tokenName == "car" ) return Car( CurrentNode ) ;
+  else if ( tokenName == "cdr" ) return Cdr( CurrentNode ) ;
+  else if ( tokenName == "atom?" ) return Is_Atom( CurrentNode ) ;
+  else if ( tokenName == "pair?" ) return Is_Pair( CurrentNode ) ;
+  else if ( tokenName == "list?" ) return Is_List( CurrentNode ) ;
+  else if ( tokenName == "null?" ) return Is_Null( CurrentNode ) ;
+  else if ( tokenName == "integer?" ) return Is_Int( CurrentNode ) ;
+  else if ( tokenName == "real?" ) return Is_Real( CurrentNode ) ;
+  else if ( tokenName == "number?" ) return Is_Num( CurrentNode ) ;
+  else if ( tokenName == "string?" ) return Is_Str( CurrentNode ) ;
+  else if ( tokenName == "boolean?" ) return Is_Bool( CurrentNode ) ;
+  else if ( tokenName == "symbol?" ) return
+  else if ( tokenName == "+" ) return
+  else if ( tokenName == "-" ) return
+  else if ( tokenName == "*" ) return
+  else if ( tokenName == "/" ) return
+  else if ( tokenName == "not" )  return
+  else if ( tokenName == "and" ) return
+  else if ( tokenName == "or" ) return
+  else if ( tokenName == ">" ) return
+  else if ( tokenName == ">=" ) return
+  else if ( tokenName == "<" ) return
+  else if ( tokenName == "<=" ) return
+  else if ( tokenName == "=" ) return
+  else if ( tokenName == "string-append" ) return
+  else if ( tokenName == "string>?" ) return
+  else if ( tokenName == "string<?" ) return
+  else if ( tokenName == "string=?" ) return
+  else if ( tokenName == "eqv?" ) return
+  else if ( tokenName == "equal?" ) return
+  else if ( tokenName == "begin" ) return
+  else if ( tokenName == "if" ) return
+  else if ( tokenName == "cond" ) return
+  else if ( tokenName == "clear-environment" ) return Clear_Env() ;
+} // FunctionJudge()
+
+
+
 // ------------------Evaluate Function--------------------- //
 
-bool Evaluate( TokenTree * CurrentNode ) {
-	if ( CurrentNode != NULL) {																// if current != NULL
-		if ( CurrentNode->leftToken != NULL ) {
+bool PostOrderTraversal( TokenTree * CurrentNode ) {
+	if ( CurrentNode != NULL) {
+    PostOrderTraversal( CurrentNode->leftNode ) ;
+    PostOrderTraversal( CurrentNode->rightNode ) ;
+		
+    if ( CurrentNode->leftToken != NULL ) {
 			if ( IsFunction( CurrentNode->leftToken->tokenName ) ) {
-				// SetFunctionType(CurrentNode->leftToken->functionType, CurrentNode->leftToken->tokenName ) ;
 				if ( CheckParameter( CurrentNode,CurrentNode->leftToken->tokenName )  )
-					cout << CurrentNode->leftToken->tokenName << endl;
+          FunctionJudge( CurrentNode,CurrentNode->leftToken->tokenName ) ;
+					//cout << CurrentNode->leftToken->tokenName << endl;
 				else {
 					cout << "nono parameter" << endl;
 					return false;
 				} // else
 			} // if
 		} // if
-
-		if ( !Evaluate( CurrentNode->leftNode ) ) return false;
-		if ( !Evaluate( CurrentNode->rightNode ) ) return false;
 	} // if
 
 	return true;
 
 } // Evaluate()
+
+bool EvaluateSExp(){
+  gCurrentNode = gTreeRoot ;
+  if ( gCurrentNode == NULL ) {
+    for ( int i = 0 ; i < gDefindSymbols.size() ; i++ ) {
+      if( gTokens[0].tokenName == gDefindSymbols[i].symbolName ) PrintDefinition(i) ;
+    } // for
+    return false ;
+  } // if
+  
+  else if( PostOrderTraversal( gCurrentNode ) ) return true;
+  else return false ;
+} // EvaluateSExp()
 
 
 
@@ -1080,7 +1295,7 @@ int main() {
 		if ( GetToken()) {
 			if ( SyntaxChecker()) {
 				if ( !ExitDetect()) {
-					if ( Evaluate(gTreeRoot)) PrintSExp();
+					if ( EvaluateSExp() ) PrintSExp();
 					else PrintEvaluateError();
 					ClearSpaceAndOneLine();
 				} // if
