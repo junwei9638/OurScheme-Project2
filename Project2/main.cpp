@@ -1198,7 +1198,7 @@ bool Clear_Env( ){
   return true;
 } // Clear_Env()
 
-bool FunctionJudge( TokenTree* CurrentNode, string tokenName  ) {
+bool FindCorrespondFunction( TokenTree* CurrentNode, string tokenName  ) {
   if ( tokenName == "cons" ) return Cons( CurrentNode ) ;
   else if ( tokenName == "list" ) return List( CurrentNode ) ;
   else if ( tokenName == "quote" ) return Quote( CurrentNode ) ;
@@ -1214,30 +1214,31 @@ bool FunctionJudge( TokenTree* CurrentNode, string tokenName  ) {
   else if ( tokenName == "number?" ) return Is_Num( CurrentNode ) ;
   else if ( tokenName == "string?" ) return Is_Str( CurrentNode ) ;
   else if ( tokenName == "boolean?" ) return Is_Bool( CurrentNode ) ;
-  else if ( tokenName == "symbol?" ) return
-  else if ( tokenName == "+" ) return
-  else if ( tokenName == "-" ) return
-  else if ( tokenName == "*" ) return
-  else if ( tokenName == "/" ) return
-  else if ( tokenName == "not" )  return
-  else if ( tokenName == "and" ) return
-  else if ( tokenName == "or" ) return
-  else if ( tokenName == ">" ) return
-  else if ( tokenName == ">=" ) return
-  else if ( tokenName == "<" ) return
-  else if ( tokenName == "<=" ) return
-  else if ( tokenName == "=" ) return
-  else if ( tokenName == "string-append" ) return
-  else if ( tokenName == "string>?" ) return
-  else if ( tokenName == "string<?" ) return
-  else if ( tokenName == "string=?" ) return
-  else if ( tokenName == "eqv?" ) return
-  else if ( tokenName == "equal?" ) return
-  else if ( tokenName == "begin" ) return
-  else if ( tokenName == "if" ) return
-  else if ( tokenName == "cond" ) return
+  else if ( tokenName == "symbol?" ) return Is_Symbol( CurrentNode ) ;
+  else if ( tokenName == "+" ) return Plus( CurrentNode ) ;
+  else if ( tokenName == "-" ) return Minus( CurrentNode ) ;
+  else if ( tokenName == "*" ) return Mult( CurrentNode ) ;
+  else if ( tokenName == "/" ) return Div( CurrentNode ) ;
+  else if ( tokenName == "not" )  return Not( CurrentNode ) ;
+  else if ( tokenName == "and" ) return And( CurrentNode ) ;
+  else if ( tokenName == "or" ) return Or( CurrentNode ) ;
+  else if ( tokenName == ">" ) return Greater( CurrentNode ) ;
+  else if ( tokenName == ">=" ) return GreaterEqual( CurrentNode ) ;
+  else if ( tokenName == "<" ) return Less( CurrentNode ) ;
+  else if ( tokenName == "<=" ) return LessEqual( CurrentNode ) ;
+  else if ( tokenName == "=" ) return Equal( CurrentNode ) ;
+  else if ( tokenName == "string-append" ) return Str_Append( CurrentNode ) ;
+  else if ( tokenName == "string>?" ) return Is_Str_Greater( CurrentNode ) ;
+  else if ( tokenName == "string<?" ) return Is_Str_Less( CurrentNode ) ;
+  else if ( tokenName == "string=?" ) return Is_Str_Equal( CurrentNode ) ;
+  else if ( tokenName == "eqv?" ) return Is_Eqv( CurrentNode ) ;
+  else if ( tokenName == "equal?" ) return Is_Equal( CurrentNode ) ;
+  else if ( tokenName == "begin" ) return Begin( CurrentNode ) ;
+  else if ( tokenName == "if" ) return If( CurrentNode ) ;
+  else if ( tokenName == "cond" ) return Cond( CurrentNode ) ;
   else if ( tokenName == "clear-environment" ) return Clear_Env() ;
-} // FunctionJudge()
+  return false;
+} // FindCorrespondFunction()
 
 
 
@@ -1250,9 +1251,11 @@ bool PostOrderTraversal( TokenTree * CurrentNode ) {
 		
     if ( CurrentNode->leftToken != NULL ) {
 			if ( IsFunction( CurrentNode->leftToken->tokenName ) ) {
-				if ( CheckParameter( CurrentNode,CurrentNode->leftToken->tokenName )  )
-          FunctionJudge( CurrentNode,CurrentNode->leftToken->tokenName ) ;
-					//cout << CurrentNode->leftToken->tokenName << endl;
+        if ( CheckParameter( CurrentNode, CurrentNode->leftToken->tokenName )  ){
+          FindCorrespondFunction( CurrentNode, CurrentNode->leftToken->tokenName ) ;
+					cout << CurrentNode->leftToken->tokenName << endl;
+        } // if
+        
 				else {
 					cout << "nono parameter" << endl;
 					return false;
@@ -1267,7 +1270,7 @@ bool PostOrderTraversal( TokenTree * CurrentNode ) {
 
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
-  if ( gCurrentNode == NULL ) {
+  if ( gCurrentNode == NULL ) {                                         // find definition symbol
     for ( int i = 0 ; i < gDefindSymbols.size() ; i++ ) {
       if( gTokens[0].tokenName == gDefindSymbols[i].symbolName ) PrintDefinition(i) ;
     } // for
