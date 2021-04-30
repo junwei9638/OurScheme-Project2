@@ -125,8 +125,10 @@ bool CheckParameter( TokenTree * CurrentNode, string tokenName ) {
 		else return false ;
 	} // if
 
+	else if ( tokenName == "list" ) return true ;
+
 	else if ( tokenName == "quote" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
+		if ( CurrentNode->rightNode != NULL )
 			return true ;
 		else return false ;
 	} // if
