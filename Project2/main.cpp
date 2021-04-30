@@ -547,6 +547,8 @@ string AtomAnalyze( string atomExp ) {
 		gAtomType = DOT;
 	} // if
 
+	else if ( atomExp == "quote" ) gAtomType = QUOTE;
+
 	else {
 
 		for ( int i = 0 ; i < atomExp.length() ; i++ ) {
@@ -789,6 +791,7 @@ void BuildTree() {
 	if ( gTreeRoot == NULL ) {
 		gTreeRoot = new TokenTree;
 		gCurrentNode = gTreeRoot;
+		gCurrentNode->backNode = NULL ;
     gCurrentNode->NeedToBePrimitive = true ;
 		InitialNode();
 	} // if
@@ -934,7 +937,7 @@ bool SyntaxChecker() {
 
 	} // if
 
-	else if ( gTokens.back().tokenTypeNum == QUOTE ) {
+	else if ( gTokens.back().tokenTypeNum == QUOTE && gTokens.back().tokenName == "'" ) {
 		// cout << "Quote " ;
 		Token temp;
 		gTokens.pop_back();
@@ -954,6 +957,23 @@ bool SyntaxChecker() {
 				gTokens.push_back(temp);
 				return true;
 			} // if :push right paren
+			else {
+				SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
+										gTokens.back().tokenLine, gTokens.back().tokenColumn);
+				return false;
+			} // else
+		} // if
+
+		else return false;
+	} // if
+
+	else if ( gTokens.back().tokenTypeNum == QUOTE && gTokens.back().tokenName == "quote" ) {
+		// cout << "Quote " ;
+		Token temp;
+		InsertAtomToTree() ;
+
+		if ( GetToken()) {
+			if ( SyntaxChecker()) return true;
 			else {
 				SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
 										gTokens.back().tokenLine, gTokens.back().tokenColumn);
