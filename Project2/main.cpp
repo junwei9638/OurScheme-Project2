@@ -16,7 +16,6 @@ struct Token {
 	int tokenTypeNum;
 	int tokenColumn;
 	int tokenLine;
-	int functionType;
 }; // TokenType
 
 struct Define {
@@ -31,6 +30,7 @@ struct TokenTree {
 	TokenTree *leftNode;
 	TokenTree *rightNode;
 	TokenTree *backNode;
+  bool NeedToBePrimitive;
 }; // TokenType
 
 enum FunctionType {
@@ -54,7 +54,9 @@ enum TokenType {
 }; // TokenType
 
 enum Error {
-	LEFT_ERROR, RIGHT_ERROR, CLOSE_ERROR, EOF_ERROR, NO_ERROR, NOT_S_EXP_ERROR
+	LEFT_ERROR, RIGHT_ERROR, CLOSE_ERROR, EOF_ERROR, NO_ERROR, NOT_S_EXP_ERROR,
+  PARAMETER_NUM_ERROR, PARAMETER_TYPE_ERROR, UNBOND_ERROR, NO_APPLY_ERROR,
+  NO_RETURN_VAL_ERROR, DIVISION_BY_ZERO_ERROR, FORMAT_ERROR,
 }; // Error
 
 vector<Token> gTokens;
@@ -118,7 +120,7 @@ bool IsFunction( string tokenName ) {
 	else return false ;
 } // IsFunction()
 
-bool CheckParameter( TokenTree * CurrentNode, string tokenName ) {
+bool CheckParameterNum( TokenTree * CurrentNode, string tokenName ) {
 	if ( tokenName == "cons" ) {
 		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL && CurrentNode->rightNode->rightNode->rightNode == NULL )
 			return true ;
@@ -128,7 +130,7 @@ bool CheckParameter( TokenTree * CurrentNode, string tokenName ) {
 	else if ( tokenName == "list" ) return true ;
 
 	else if ( tokenName == "quote" ) {
-		if ( CurrentNode->rightNode != NULL )
+		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
 			return true ;
 		else return false ;
 	} // if
@@ -340,6 +342,7 @@ bool CheckParameter( TokenTree * CurrentNode, string tokenName ) {
   return false ;
 } // CheckParameter()
 // ------------------Setting Function--------------------- //
+/*
 void SetFunctionType( int & functionType ,string tokenName ) {
 	if ( tokenName == "cons" ) functionType = CONS ;
 	else if ( tokenName == "list" ) functionType = LIST ;
@@ -381,6 +384,7 @@ void SetFunctionType( int & functionType ,string tokenName ) {
 	else if ( tokenName == "clear-environment" ) functionType = CLEAR_ENV ;
 
 } // SetFunctionType()
+*/
 
 void InitialLineColumn() {
 	gLine = 1;
@@ -733,6 +737,7 @@ void InsertAtomToTree() {
 					gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
 					gCurrentNode->rightNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->rightNode;
+          gCurrentNode->NeedToBePrimitive = false ;
 					InitialNode();
 					gCurrentNode->leftToken = new Token;
 					gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
@@ -764,6 +769,7 @@ void InsertAtomToTree() {
 				gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
 				gCurrentNode->rightNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->rightNode;
+        gCurrentNode->NeedToBePrimitive = false ;
 				InitialNode();
 				gCurrentNode->leftToken = new Token;
 				gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
@@ -783,6 +789,7 @@ void BuildTree() {
 	if ( gTreeRoot == NULL ) {
 		gTreeRoot = new TokenTree;
 		gCurrentNode = gTreeRoot;
+    gCurrentNode->NeedToBePrimitive = true ;
 		InitialNode();
 	} // if
 
@@ -792,6 +799,10 @@ void BuildTree() {
 				gCurrentNode->leftNode = new TokenTree;
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
+        if ( gTokens[gTokens.size() - 2 ].tokenTypeNum == QUOTE )
+          gCurrentNode->NeedToBePrimitive = false ;
+        else
+          gCurrentNode->NeedToBePrimitive = true ;
 				InitialNode();
 			} // if
 
@@ -811,12 +822,17 @@ void BuildTree() {
 				gCurrentNode->rightNode = new TokenTree;
 				gCurrentNode->rightNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->rightNode;
+        gCurrentNode->NeedToBePrimitive = false ;
 				InitialNode();
 
 				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {    // if !dot-> create left node
 					gCurrentNode->leftNode = new TokenTree;
 					gCurrentNode->leftNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->leftNode;
+          if ( gTokens[gTokens.size() - 2 ].tokenTypeNum == QUOTE )
+            gCurrentNode->NeedToBePrimitive = false ;
+          else
+            gCurrentNode->NeedToBePrimitive = true ;
 					InitialNode();
 				} // if
 
@@ -831,7 +847,7 @@ void BuildTree() {
         if ( gCurrentNode->backNode->leftToken != NULL ) {
           if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
             gCurrentNode = gCurrentNode->backNode;
-          while ( gCurrentNode->rightNode != NULL )                         // find right node null
+          while ( gCurrentNode->rightNode != NULL )        // find right node null and above quote
             gCurrentNode = gCurrentNode->backNode;
         } // if
       } // if
@@ -839,12 +855,17 @@ void BuildTree() {
 			gCurrentNode->rightNode = new TokenTree;                       // and create right node
 			gCurrentNode->rightNode->backNode = gCurrentNode;
 			gCurrentNode = gCurrentNode->rightNode;
+      gCurrentNode->NeedToBePrimitive = false;
 			InitialNode();
 
 			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create left node
 				gCurrentNode->leftNode = new TokenTree;
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
+        if ( gTokens[gTokens.size() - 2 ].tokenTypeNum == QUOTE )
+          gCurrentNode->NeedToBePrimitive = false ;
+        else
+          gCurrentNode->NeedToBePrimitive = true ;
 				InitialNode();
 			} // if
 
@@ -1072,11 +1093,13 @@ void PrintErrorMessage() {
 				 << gErrorLine << " Column " << gErrorColumn << endl << endl;
 	else if ( gErrorMsgType == EOF_ERROR )
 		cout << "ERROR (no more input) : END-OF-FILE encountered";
+  else if ( gErrorMsgType == PARAMETER_NUM_ERROR )
+    cout << "ERROR (incorrect number of arguments) : " << gErrorMsgName << endl ;
+  else if ( gErrorMsgType == NO_APPLY_ERROR )
+    cout << "ERROR (attempt to apply non-function) : " << gErrorMsgName << endl;
+  
 } // PrintErrorMessage()
 
-void PrintEvaluateError() {
-	cout << "ERROR " << endl ;
-} // PrintEvaluateError()
 
 void PrintDefinition( int index ) {
   
@@ -1085,6 +1108,7 @@ void PrintDefinition( int index ) {
 // ------------------Functional Function--------------------- //
 
 bool Cons( TokenTree* CurrentNode ) {
+  
   return true ;
 }  // Cons()
 
@@ -1283,29 +1307,34 @@ bool FindCorrespondFunction( TokenTree* CurrentNode, string tokenName  ) {
 
 // ------------------Evaluate Function--------------------- //
 
-bool PostOrderTraversal( TokenTree * CurrentNode ) {
+bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
 	if ( CurrentNode != NULL) {
-    PostOrderTraversal( CurrentNode->leftNode ) ;
-    PostOrderTraversal( CurrentNode->rightNode ) ;
+    if( !TraversalTreeAndCheck( CurrentNode->leftNode ) ) return false;
+    if( !TraversalTreeAndCheck( CurrentNode->rightNode ) ) return false;
 		
     if ( CurrentNode->leftToken != NULL ) {
 			if ( IsFunction( CurrentNode->leftToken->tokenName ) ) {
-        if ( CheckParameter( CurrentNode, CurrentNode->leftToken->tokenName )  ){
+        if ( CheckParameterNum( CurrentNode, CurrentNode->leftToken->tokenName )  ){
           FindCorrespondFunction( CurrentNode, CurrentNode->leftToken->tokenName ) ;
 					cout << CurrentNode->leftToken->tokenName << endl;
         } // if
         
 				else {
-					cout << "nono parameter" << endl;
+          SetErrorMsg( PARAMETER_NUM_ERROR, CurrentNode->leftToken->tokenName, 0, 0) ;
 					return false;
-				} // else
-			} // if
+				} // else : parameter error
+			} // if : is Function Check
+      
+      else if ( CurrentNode->NeedToBePrimitive == true ) {
+        SetErrorMsg( NO_APPLY_ERROR, CurrentNode->leftToken->tokenName, 0, 0) ;
+        return false;
+      } // if : not function but has to be
 		} // if
 	} // if
 
 	return true;
 
-} // Evaluate()
+} // TraversalTreeAndCheck()
 
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
@@ -1316,7 +1345,7 @@ bool EvaluateSExp(){
     return false ;
   } // if
   
-  else if( PostOrderTraversal( gCurrentNode ) ) return true;
+  else if( TraversalTreeAndCheck( gCurrentNode ) ) return true;
   else return false ;
 } // EvaluateSExp()
 
@@ -1338,7 +1367,7 @@ int main() {
 			if ( SyntaxChecker()) {
 				if ( !ExitDetect()) {
 					if ( EvaluateSExp() ) PrintSExp();
-					else PrintEvaluateError();
+					else PrintErrorMessage();
 					ClearSpaceAndOneLine();
 				} // if
 			} // if
