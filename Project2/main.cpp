@@ -718,6 +718,16 @@ void InsertAtomToTree() {
 			else if ( gCurrentNode->leftNode != NULL ) {                        // left node !null
 				while ( gCurrentNode->rightNode != NULL )                         // find right node null
 					gCurrentNode = gCurrentNode->backNode;
+        
+        if ( gCurrentNode->backNode != NULL ) {
+          if ( gCurrentNode->backNode->leftToken != NULL ) {
+            if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
+              gCurrentNode = gCurrentNode->backNode;
+            while ( gCurrentNode->rightNode != NULL )                         // find right node null
+              gCurrentNode = gCurrentNode->backNode;
+          } // if
+        } // if
+        
 
 				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
 					gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
@@ -740,6 +750,15 @@ void InsertAtomToTree() {
 		else if ( gCurrentNode->leftToken != NULL ) {                       // left token !null
 			while ( gCurrentNode->rightNode != NULL )                        // find right node null
 				gCurrentNode = gCurrentNode->backNode;
+      
+      if ( gCurrentNode->backNode != NULL ) {
+        if ( gCurrentNode->backNode->leftToken != NULL ) {
+          if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
+            gCurrentNode = gCurrentNode->backNode;
+          while ( gCurrentNode->rightNode != NULL )                         // find right node null
+            gCurrentNode = gCurrentNode->backNode;
+        } // if
+      } // if
 
 			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
 				gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
@@ -779,6 +798,15 @@ void BuildTree() {
 			else if ( gCurrentNode->leftNode != NULL ) {          // left node !null
 				while ( gCurrentNode->rightNode != NULL )           // find right node null-> create node
 					gCurrentNode = gCurrentNode->backNode;
+        
+        if ( gCurrentNode->backNode != NULL ) {
+          if ( gCurrentNode->backNode->leftToken != NULL ) {
+            if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
+              gCurrentNode = gCurrentNode->backNode;
+            while ( gCurrentNode->rightNode != NULL )                         // find right node null
+              gCurrentNode = gCurrentNode->backNode;
+          } // if
+        } // if
 
 				gCurrentNode->rightNode = new TokenTree;
 				gCurrentNode->rightNode->backNode = gCurrentNode;
@@ -798,6 +826,15 @@ void BuildTree() {
 		else if ( gCurrentNode->leftToken != NULL ) {         // left token !null
 			while ( gCurrentNode->rightNode != NULL )           // find right node null-> create node
 				gCurrentNode = gCurrentNode->backNode;
+      
+      if ( gCurrentNode->backNode != NULL ) {
+        if ( gCurrentNode->backNode->leftToken != NULL ) {
+          if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
+            gCurrentNode = gCurrentNode->backNode;
+          while ( gCurrentNode->rightNode != NULL )                         // find right node null
+            gCurrentNode = gCurrentNode->backNode;
+        } // if
+      } // if
 
 			gCurrentNode->rightNode = new TokenTree;                       // and create right node
 			gCurrentNode->rightNode->backNode = gCurrentNode;
