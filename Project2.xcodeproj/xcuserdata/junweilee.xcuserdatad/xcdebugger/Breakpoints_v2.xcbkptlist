@@ -14,8 +14,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "808"
-            endingLineNumber = "808"
+            startingLineNumber = "805"
+            endingLineNumber = "805"
             landmarkName = "BuildTree()"
             landmarkType = "9">
          </BreakpointContent>
@@ -30,9 +30,25 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1340"
-            endingLineNumber = "1340"
+            startingLineNumber = "1338"
+            endingLineNumber = "1338"
             landmarkName = "EvaluateSExp()"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D20D9B27-E41E-4A05-9D00-672B80279463"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1302"
+            endingLineNumber = "1302"
+            landmarkName = "TraversalTreeAndCheck(CurrentNode)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

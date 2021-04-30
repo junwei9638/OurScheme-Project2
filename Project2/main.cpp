@@ -799,10 +799,7 @@ void BuildTree() {
 				gCurrentNode->leftNode = new TokenTree;
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
-        if ( gTokens[gTokens.size() - 2 ].tokenTypeNum == QUOTE )
-          gCurrentNode->NeedToBePrimitive = false ;
-        else
-          gCurrentNode->NeedToBePrimitive = true ;
+        gCurrentNode->NeedToBePrimitive = true ;
 				InitialNode();
 			} // if
 
@@ -829,10 +826,7 @@ void BuildTree() {
 					gCurrentNode->leftNode = new TokenTree;
 					gCurrentNode->leftNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->leftNode;
-          if ( gTokens[gTokens.size() - 2 ].tokenTypeNum == QUOTE )
-            gCurrentNode->NeedToBePrimitive = false ;
-          else
-            gCurrentNode->NeedToBePrimitive = true ;
+          gCurrentNode->NeedToBePrimitive = true ;
 					InitialNode();
 				} // if
 
@@ -862,10 +856,7 @@ void BuildTree() {
 				gCurrentNode->leftNode = new TokenTree;
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
-        if ( gTokens[gTokens.size() - 2 ].tokenTypeNum == QUOTE )
-          gCurrentNode->NeedToBePrimitive = false ;
-        else
-          gCurrentNode->NeedToBePrimitive = true ;
+        gCurrentNode->NeedToBePrimitive = true ;
 				InitialNode();
 			} // if
 
@@ -1308,12 +1299,19 @@ bool FindCorrespondFunction( TokenTree* CurrentNode, string tokenName  ) {
 // ------------------Evaluate Function--------------------- //
 
 bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
+  static bool quoteScope = false ;
 	if ( CurrentNode != NULL) {
+    
+    if ( CurrentNode->leftToken != NULL ){
+      if ( CurrentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = true ;
+    } // if
+    
     if( !TraversalTreeAndCheck( CurrentNode->leftNode ) ) return false;
     if( !TraversalTreeAndCheck( CurrentNode->rightNode ) ) return false;
 		
     if ( CurrentNode->leftToken != NULL ) {
 			if ( IsFunction( CurrentNode->leftToken->tokenName ) ) {
+        if ( CurrentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = false ;
         if ( CheckParameterNum( CurrentNode, CurrentNode->leftToken->tokenName )  ){
           FindCorrespondFunction( CurrentNode, CurrentNode->leftToken->tokenName ) ;
 					cout << CurrentNode->leftToken->tokenName << endl;
@@ -1325,7 +1323,7 @@ bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
 				} // else : parameter error
 			} // if : is Function Check
       
-      else if ( CurrentNode->NeedToBePrimitive == true ) {
+      else if ( CurrentNode->NeedToBePrimitive == true && !quoteScope ) {
         SetErrorMsg( NO_APPLY_ERROR, CurrentNode->leftToken->tokenName, 0, 0) ;
         return false;
       } // if : not function but has to be
