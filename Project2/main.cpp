@@ -18,12 +18,6 @@ struct Token {
 	int tokenLine;
 }; // TokenType
 
-struct Define {
-	string symbolName;
-	Define *Binding;
-}; // Define Symbol
-
-
 struct TokenTree {
 	Token *leftToken;
 	Token *rightToken;
@@ -32,6 +26,11 @@ struct TokenTree {
 	TokenTree *backNode;
   bool NeedToBePrimitive;
 }; // TokenType
+
+struct DefineSymbol {
+	string symbolName;
+	TokenTree *binding;
+}; // DefineSymbol Symbol
 
 enum FunctionType {
   CONS, LIST,
@@ -60,7 +59,7 @@ enum Error {
 }; // Error
 
 vector<Token> gTokens;
-vector<Define> gDefindSymbols;
+vector<DefineSymbol> gDefineSymbols;
 TokenTree *gTreeRoot = NULL;
 TokenTree *gCurrentNode = NULL;
 
@@ -991,7 +990,7 @@ bool SyntaxChecker() {
 } // SyntaxChecker()
 
 // ------------------Print Function--------------------- //
-
+/*
 void PrintAtom( int i ) {
 	if ( gTokens[i].tokenTypeNum == FLOAT ) {
 		cout << fixed << setprecision(3)
@@ -1091,6 +1090,7 @@ void PrintSExp() {
 
 	cout << endl;
 } // PrintSExp()
+ */
 
 void PrintErrorMessage() {
 	if ( gErrorMsgType == LEFT_ERROR || gErrorMsgType == NOT_S_EXP_ERROR )
@@ -1108,12 +1108,27 @@ void PrintErrorMessage() {
     cout << "ERROR (incorrect number of arguments) : " << gErrorMsgName << endl ;
   else if ( gErrorMsgType == NO_APPLY_ERROR )
     cout << "ERROR (attempt to apply non-function) : " << gErrorMsgName << endl;
+	else if ( gErrorMsgType == UNBOND_ERROR )
+		cout << "ERROR (unbound symbol) : "<< gErrorMsgName << endl;
   
 } // PrintErrorMessage()
 
+void PrintSExpTree( TokenTree * CurrentNode ) {
+	cout << "PrintSExpTree()" << endl;
+} // PrintSExpTree()
 
-void PrintDefinition( int index ) {
-  
+bool PrintDefinition( ) {
+	for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
+		if ( gTokens[0].tokenName == gDefineSymbols[i].symbolName ) {
+			if( gDefineSymbols[i].binding->leftToken != NULL )
+				cout << gDefineSymbols[i].binding->leftToken->tokenName << endl;
+			else PrintSExpTree( gDefineSymbols[i].binding ) ;
+			return true ;
+		} // if
+	} // for
+
+	SetErrorMsg( UNBOND_ERROR, gTokens[0].tokenName, 0, 0 ) ;
+	return false ;
 }  // PrintDefinition()
 
 // ------------------Functional Function--------------------- //
@@ -1132,8 +1147,13 @@ bool Quote( TokenTree* CurrentNode ) {
 } // Quote
 
 bool Define( TokenTree* CurrentNode ) {
+	DefineSymbol temp ;
+	temp.symbolName = CurrentNode->rightNode->leftToken->tokenName ;
+	temp.binding = CurrentNode->rightNode->rightNode ;
+	gDefineSymbols.push_back( temp ) ;
+	cout << temp.symbolName << " defined"<< endl;
   return true ;
-} // Define()
+} // DefineSymbol()
 
 bool Car( TokenTree* CurrentNode ) {
   return true ;
@@ -1268,7 +1288,7 @@ bool Cond( TokenTree* CurrentNode ) {
 } // Cond()
 
 bool Clear_Env( ){
-  gDefindSymbols.clear() ;
+  gDefineSymbols.clear() ;
   return true;
 } // Clear_Env()
 
@@ -1276,7 +1296,7 @@ bool FindCorrespondFunction( TokenTree* CurrentNode, string tokenName  ) {
   if ( tokenName == "cons" ) return Cons( CurrentNode ) ;
   else if ( tokenName == "list" ) return List( CurrentNode ) ;
   else if ( tokenName == "quote" ) return Quote( CurrentNode ) ;
-  else if ( tokenName == "define" ) return Define( CurrentNode ) ;
+  else if ( tokenName == "define" ) return Define(CurrentNode ) ;
   else if ( tokenName == "car" ) return Car( CurrentNode ) ;
   else if ( tokenName == "cdr" ) return Cdr( CurrentNode ) ;
   else if ( tokenName == "atom?" ) return Is_Atom( CurrentNode ) ;
@@ -1334,7 +1354,7 @@ bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
         if ( CurrentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = false ;
         if ( CheckParameterNum( CurrentNode, CurrentNode->leftToken->tokenName )  ){
           FindCorrespondFunction( CurrentNode, CurrentNode->leftToken->tokenName ) ;
-					cout << CurrentNode->leftToken->tokenName << endl;
+					// cout << CurrentNode->leftToken->tokenName << endl;
         } // if
         
 				else {
@@ -1357,13 +1377,11 @@ bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
   if ( gCurrentNode == NULL ) {                                         // find definition symbol
-    for ( int i = 0 ; i < gDefindSymbols.size() ; i++ ) {
-      if( gTokens[0].tokenName == gDefindSymbols[i].symbolName ) PrintDefinition(i) ;
-    } // for
-    return false ;
+  	if ( PrintDefinition() ) return true ;
+  	else return false ;
   } // if
   
-  else if( TraversalTreeAndCheck( gCurrentNode ) ) return true;
+  else if ( TraversalTreeAndCheck( gCurrentNode ) ) return true;
   else return false ;
 } // EvaluateSExp()
 
@@ -1384,8 +1402,7 @@ int main() {
 		if ( GetToken()) {
 			if ( SyntaxChecker()) {
 				if ( !ExitDetect()) {
-					if ( EvaluateSExp() ) PrintSExp();
-					else PrintErrorMessage();
+					if ( !EvaluateSExp() ) PrintErrorMessage();
 					ClearSpaceAndOneLine();
 				} // if
 			} // if
