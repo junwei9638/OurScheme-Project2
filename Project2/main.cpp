@@ -36,7 +36,7 @@ struct Result {
   string resultMsg;
   int resultInt;
   bool intBool ;
-  bool FloatBool ;
+  bool floatBool ;
   float resultFloat;
   TokenTree *resultBinding;
 }; // DefineSymbol Symbol
@@ -64,12 +64,12 @@ enum TokenType {
 enum Error {
 	LEFT_ERROR, RIGHT_ERROR, CLOSE_ERROR, EOF_ERROR, NO_ERROR, NOT_S_EXP_ERROR,
   PARAMETER_NUM_ERROR, PARAMETER_TYPE_ERROR, UNBOND_ERROR, NO_APPLY_ERROR,
-  NO_RETURN_VAL_ERROR, DIVISION_BY_ZERO_ERROR, FORMAT_ERROR,
+  NO_RETURN_VAL_ERROR, DIVISION_BY_ZERO_ERROR, FORMAT_ERROR, NON_LIST_ERROR
 }; // Error
 
 vector<Token> gTokens;
 vector<DefineSymbol> gDefineSymbols;
-Result gResult ;
+vector<Result> gResultList ;
 TokenTree *gTreeRoot = NULL;
 TokenTree *gCurrentNode = NULL;
 
@@ -187,13 +187,15 @@ void GlobalVariableInitial() {
 	gErrorMsgType = NO_ERROR;
 	gErrorMsgName = "\0";
 	gAtomType = 0;
-  gResult.resultBinding = NULL ;
-  gResult.resultFloat = 0.000;
-  gResult.resultInt = 0;
-  gResult.resultMsg = "\0" ;
-  gResult.intBool = false ;
-  gResult.FloatBool = false ;
-  } // GlobalVariableReset()
+  gResultList.clear();
+} // GlobalVariableReset()
+
+void InitialResult( Result result) {
+  result.floatBool = false ;
+  result.intBool = false ;
+  result.resultMsg = "\0" ;
+  result.resultBinding = NULL ;
+} //InitialResult()
 
 
 // ------------------JudgeMent Function--------------------- //
@@ -240,7 +242,7 @@ bool IsFunction( string tokenName ) {
   else return false ;
 } // IsFunction()
 
-bool CheckParameterNum( TokenTree * currentNode, string tokenName ) {
+bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   if ( tokenName == "cons" ) {
     if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL )
       return true ;
@@ -1198,60 +1200,61 @@ void PrintSExpTree( TokenTree * currentNode ) {
 
 
 void PrintFunctionMsg() {
-  if ( gResult.resultMsg != "\0" ) cout << gResult.resultMsg << endl ;
+  if ( gResultList[0].resultMsg != "\0" ) cout << gResultList[0].resultMsg << endl ;
   
-  if ( gResult.intBool ) cout << gResult.resultInt << endl ;
+  if ( gResultList[0].intBool ) cout << gResultList[0].resultInt << endl ;
   
-  if ( gResult.FloatBool ) cout << gResult.resultFloat << endl;
+  if ( gResultList[0].floatBool ) cout << gResultList[0].resultFloat << endl;
   
-  if( gResult.resultBinding != NULL ) PrintSExpTree( gResult.resultBinding ) ;
+  if( gResultList[0].resultBinding != NULL ) PrintSExpTree( gResultList[0].resultBinding ) ;
   
 } // PrintFunctionMsg()
 
 // ------------------Functional Function--------------------- //
 
-bool Cons( TokenTree* currentNode ) {
+void Cons( TokenTree* currentNode ) {
   
-  return true ;
+  
 }  // Cons()
 
-bool List( TokenTree* currentNode ) {
-  if ( currentNode->rightNode != NULL )
-    gResult.resultBinding = currentNode->rightNode ;  // return tree without list
-  return true ;
+void List( TokenTree* currentNode ) {
+  TokenTree* connectNode = NULL ;
+  //while ( currentNode->rightNode != NULL ){
+    
+  //} // while
+    
 } // List()
 
-bool Quote( TokenTree* currentNode ) {
+void Quote( TokenTree* currentNode ) {
   TokenTree * notQuoteNode = currentNode ;
-  if( currentNode->backNode != NULL )           // ( quote case )
-    currentNode = currentNode->backNode ;       // ( function quote case )
-  
+  Result result ;
   while( notQuoteNode->leftToken != NULL && notQuoteNode->leftToken->tokenName == "quote" ) {
     notQuoteNode = notQuoteNode->rightNode->leftNode ;
   } // while : Find not quote node
   
-  if ( currentNode->leftNode != NULL ) currentNode->leftNode = notQuoteNode ;    // ( quote case )
-  else currentNode = notQuoteNode ;                                 // ( function quote case )
-  gResult.resultBinding = currentNode ;
-  return true ;
+  result.resultBinding = notQuoteNode ;
+  gResultList.push_back( result ) ;
+
 } // Quote
 
-bool Define( TokenTree* currentNode ) {
+void Define( TokenTree* currentNode ) {
 	DefineSymbol temp ;
+  Result result ;
+  InitialResult( result ) ;
 	temp.symbolName = currentNode->rightNode->leftToken->tokenName ;
 	temp.binding = currentNode->rightNode->rightNode ;
   
   for ( int i = 0; i < gDefineSymbols.size(); i++ ) {
     if( temp.symbolName == gDefineSymbols[i].symbolName ) {
       gDefineSymbols[i].binding = currentNode->rightNode->rightNode ;
-      gResult.resultMsg =  temp.symbolName + " defined" ;
-      return true;
+      result.resultMsg =  temp.symbolName + " defined" ;
+      return ;
     } // if
   } // for : find same definition
   
 	gDefineSymbols.push_back( temp ) ;
-	gResult.resultMsg =  temp.symbolName + " defined" ;
-  return true ;
+	result.resultMsg =  temp.symbolName + " defined" ;
+  gResultList.push_back( result ) ;
 } // DefineSymbol()
 
 bool Car( TokenTree* currentNode ) {
@@ -1391,46 +1394,45 @@ bool Clear_Env( ){
   return true;
 } // Clear_Env()
 
-bool FindCorrespondFunction( TokenTree* currentNode, string tokenName  ) {
-  if ( tokenName == "cons" ) return Cons( currentNode ) ;
-  else if ( tokenName == "list" ) return List( currentNode ) ;
-  else if ( tokenName == "quote" ) return Quote( currentNode ) ;
-  else if ( tokenName == "define" ) return Define(currentNode ) ;
-  else if ( tokenName == "car" ) return Car( currentNode ) ;
-  else if ( tokenName == "cdr" ) return Cdr( currentNode ) ;
-  else if ( tokenName == "atom?" ) return Is_Atom( currentNode ) ;
-  else if ( tokenName == "pair?" ) return Is_Pair( currentNode ) ;
-  else if ( tokenName == "list?" ) return Is_List( currentNode ) ;
-  else if ( tokenName == "null?" ) return Is_Null( currentNode ) ;
-  else if ( tokenName == "integer?" ) return Is_Int( currentNode ) ;
-  else if ( tokenName == "real?" ) return Is_Real( currentNode ) ;
-  else if ( tokenName == "number?" ) return Is_Num( currentNode ) ;
-  else if ( tokenName == "string?" ) return Is_Str( currentNode ) ;
-  else if ( tokenName == "boolean?" ) return Is_Bool( currentNode ) ;
-  else if ( tokenName == "symbol?" ) return Is_Symbol( currentNode ) ;
-  else if ( tokenName == "+" ) return Plus( currentNode ) ;
-  else if ( tokenName == "-" ) return Minus( currentNode ) ;
-  else if ( tokenName == "*" ) return Mult( currentNode ) ;
-  else if ( tokenName == "/" ) return Div( currentNode ) ;
-  else if ( tokenName == "not" )  return Not( currentNode ) ;
-  else if ( tokenName == "and" ) return And( currentNode ) ;
-  else if ( tokenName == "or" ) return Or( currentNode ) ;
-  else if ( tokenName == ">" ) return Greater( currentNode ) ;
-  else if ( tokenName == ">=" ) return GreaterEqual( currentNode ) ;
-  else if ( tokenName == "<" ) return Less( currentNode ) ;
-  else if ( tokenName == "<=" ) return LessEqual( currentNode ) ;
-  else if ( tokenName == "=" ) return Equal( currentNode ) ;
-  else if ( tokenName == "string-append" ) return Str_Append( currentNode ) ;
-  else if ( tokenName == "string>?" ) return Is_Str_Greater( currentNode ) ;
-  else if ( tokenName == "string<?" ) return Is_Str_Less( currentNode ) ;
-  else if ( tokenName == "string=?" ) return Is_Str_Equal( currentNode ) ;
-  else if ( tokenName == "eqv?" ) return Is_Eqv( currentNode ) ;
-  else if ( tokenName == "equal?" ) return Is_Equal( currentNode ) ;
-  else if ( tokenName == "begin" ) return Begin( currentNode ) ;
-  else if ( tokenName == "if" ) return If( currentNode ) ;
-  else if ( tokenName == "cond" ) return Cond( currentNode ) ;
-  else if ( tokenName == "clear-environment" ) return Clear_Env() ;
-  return false;
+void FindCorrespondFunction( TokenTree* currentNode, string tokenName  ) {
+  if ( tokenName == "cons" ) Cons( currentNode ) ;
+  else if ( tokenName == "list" ) List( currentNode ) ;
+  else if ( tokenName == "quote" ) Quote( currentNode ) ;
+  else if ( tokenName == "define" ) Define(currentNode ) ;
+  else if ( tokenName == "car" ) Car( currentNode ) ;
+  else if ( tokenName == "cdr" ) Cdr( currentNode ) ;
+  else if ( tokenName == "atom?" ) Is_Atom( currentNode ) ;
+  else if ( tokenName == "pair?" ) Is_Pair( currentNode ) ;
+  else if ( tokenName == "list?" ) Is_List( currentNode ) ;
+  else if ( tokenName == "null?" ) Is_Null( currentNode ) ;
+  else if ( tokenName == "integer?" ) Is_Int( currentNode ) ;
+  else if ( tokenName == "real?" ) Is_Real( currentNode ) ;
+  else if ( tokenName == "number?" ) Is_Num( currentNode ) ;
+  else if ( tokenName == "string?" ) Is_Str( currentNode ) ;
+  else if ( tokenName == "boolean?" ) Is_Bool( currentNode ) ;
+  else if ( tokenName == "symbol?" ) Is_Symbol( currentNode ) ;
+  else if ( tokenName == "+" ) Plus( currentNode ) ;
+  else if ( tokenName == "-" ) Minus( currentNode ) ;
+  else if ( tokenName == "*" ) Mult( currentNode ) ;
+  else if ( tokenName == "/" ) Div( currentNode ) ;
+  else if ( tokenName == "not" ) Not( currentNode ) ;
+  else if ( tokenName == "and" ) And( currentNode ) ;
+  else if ( tokenName == "or" ) Or( currentNode ) ;
+  else if ( tokenName == ">" ) Greater( currentNode ) ;
+  else if ( tokenName == ">=" ) GreaterEqual( currentNode ) ;
+  else if ( tokenName == "<" ) Less( currentNode ) ;
+  else if ( tokenName == "<=" ) LessEqual( currentNode ) ;
+  else if ( tokenName == "=" ) Equal( currentNode ) ;
+  else if ( tokenName == "string-append" ) Str_Append( currentNode ) ;
+  else if ( tokenName == "string>?" ) Is_Str_Greater( currentNode ) ;
+  else if ( tokenName == "string<?" ) Is_Str_Less( currentNode ) ;
+  else if ( tokenName == "string=?" ) Is_Str_Equal( currentNode ) ;
+  else if ( tokenName == "eqv?" ) Is_Eqv( currentNode ) ;
+  else if ( tokenName == "equal?" ) Is_Equal( currentNode ) ;
+  else if ( tokenName == "begin" ) Begin( currentNode ) ;
+  else if ( tokenName == "if" ) If( currentNode ) ;
+  else if ( tokenName == "cond" ) Cond( currentNode ) ;
+  else if ( tokenName == "clear-environment" ) Clear_Env() ;
 } // FindCorrespondFunction()
 
 
@@ -1438,11 +1440,15 @@ bool FindCorrespondFunction( TokenTree* currentNode, string tokenName  ) {
 // ------------------Evaluate Function--------------------- //
 
 bool FindDefinition( ) {
+  Result result ;
   for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
     if ( gTokens[0].tokenName == gDefineSymbols[i].symbolName ) {
       if( gDefineSymbols[i].binding->leftToken != NULL )
-        gResult.resultMsg = gDefineSymbols[i].binding->leftToken->tokenName ;
-      else gResult.resultBinding = gDefineSymbols[i].binding ;
+        result.resultMsg = gDefineSymbols[i].binding->leftToken->tokenName ;
+      else {
+        result.resultBinding = gDefineSymbols[i].binding ;
+        gResultList.push_back( result ) ;
+      } // else
       return true ;
     } // if
   } // for
@@ -1457,17 +1463,17 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
     
     if ( currentNode->leftToken != NULL ){
       if ( currentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = true ;
+      else if ( IsFunction( currentNode->leftToken->tokenName ) ) quoteScope = false   ;
     } // if
     
-    if( !TraversalTreeAndCheck( currentNode->leftNode ) ) return false;
     if( !TraversalTreeAndCheck( currentNode->rightNode ) ) return false;
+    if( !TraversalTreeAndCheck( currentNode->leftNode ) ) return false;
 		
     if ( currentNode->leftToken != NULL ) {
 			if ( IsFunction( currentNode->leftToken->tokenName ) ) {
-        if ( currentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = false ;
-        if ( CheckParameterNum( currentNode, currentNode->leftToken->tokenName )  ){
+        if ( CheckParameter( currentNode, currentNode->leftToken->tokenName )  ){
           FindCorrespondFunction( currentNode, currentNode->leftToken->tokenName ) ;
-					// cout << currentNode->leftToken->tokenName << endl;
+					cout << currentNode->leftToken->tokenName << endl;
         } // if
         
 				else return false;
