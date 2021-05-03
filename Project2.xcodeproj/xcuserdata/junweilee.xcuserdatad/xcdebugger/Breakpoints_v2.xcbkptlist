@@ -14,8 +14,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "805"
-            endingLineNumber = "805"
+            startingLineNumber = "882"
+            endingLineNumber = "882"
             landmarkName = "BuildTree()"
             landmarkType = "9">
          </BreakpointContent>
@@ -30,9 +30,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1338"
-            endingLineNumber = "1338"
-            landmarkName = "EvaluateSExp()"
+            startingLineNumber = "1437"
+            endingLineNumber = "1437"
+            landmarkName = "FindDefinition()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -46,9 +46,25 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1302"
-            endingLineNumber = "1302"
-            landmarkName = "TraversalTreeAndCheck(CurrentNode)"
+            startingLineNumber = "1401"
+            endingLineNumber = "1401"
+            landmarkName = "FindCorrespondFunction(currentNode, tokenName)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B9B31C99-E100-497D-92CA-93572DA19207"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1518"
+            endingLineNumber = "1518"
+            landmarkName = "main()"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

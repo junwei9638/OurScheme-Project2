@@ -32,6 +32,15 @@ struct DefineSymbol {
 	TokenTree *binding;
 }; // DefineSymbol Symbol
 
+struct Result {
+  string resultMsg;
+  int resultInt;
+  bool intBool ;
+  bool FloatBool ;
+  float resultFloat;
+  TokenTree *resultBinding;
+}; // DefineSymbol Symbol
+
 enum FunctionType {
   CONS, LIST,
   FUNC_QUOTE,
@@ -60,6 +69,7 @@ enum Error {
 
 vector<Token> gTokens;
 vector<DefineSymbol> gDefineSymbols;
+Result gResult ;
 TokenTree *gTreeRoot = NULL;
 TokenTree *gCurrentNode = NULL;
 
@@ -74,272 +84,6 @@ int gErrorMsgType = NO_ERROR;
 int gErrorLine = 0;
 int gErrorColumn = 0;
 
-// ------------------JudgeMent Function--------------------- //
-bool ExitDetect() {
-
-	int nilExit = -1;
-	int exitNil = -1;
-	string tokenString = "\0";
-
-	for ( int i = 0 ; i < gTokens.size() ; i++ )
-		tokenString += gTokens[i].tokenName;
-
-	nilExit = (int) tokenString.find("(nil.exit)");
-	exitNil = (int) tokenString.find("(exit.nil)");
-
-	if ( tokenString == "(exit)" || nilExit != -1 || exitNil != -1 ) {
-		gIsEnd = true;
-		return true;
-	} // if
-
-
-	return false;
-} // ExitDetect()
-
-bool IsAtom( int typeNum ) {
-	if ( typeNum == SYMBOL || typeNum == INT ||
-			 typeNum == FLOAT || typeNum == STRING ||
-			 typeNum == NIL || typeNum == T )
-		return true;
-
-	else return false;
-} // IsAtom()
-
-bool IsFunction( string tokenName ) {
-	if ( tokenName == "cons" || tokenName == "list" || tokenName == "quote" || tokenName == "define" ||
-			 tokenName == "car" || tokenName == "cdr" || tokenName == "atom?" || tokenName == "pair?" ||
-			 tokenName == "list?" || tokenName == "null?" || tokenName == "integer?" || tokenName == "real?" ||
-			 tokenName == "number?" || tokenName == "string?" || tokenName == "boolean?" || tokenName == "symbol?" ||
-			 tokenName == "+" || tokenName == "-" || tokenName == "*" || tokenName == "/" || tokenName == "not" ||
-			 tokenName == "and" || tokenName == "or" || tokenName == ">" || tokenName == ">=" || tokenName == "<" ||
-			 tokenName == "<=" || tokenName == "=" || tokenName == "string-append" || tokenName == "string>?" ||
-			 tokenName == "string<?" || tokenName == "string=?" || tokenName == "eqv?" || tokenName == "equal?" ||
-			 tokenName == "begin" || tokenName == "if" || tokenName == "cond" || tokenName == "clean-environment" )
-		return true ;
-	else return false ;
-} // IsFunction()
-
-bool CheckParameterNum( TokenTree * CurrentNode, string tokenName ) {
-	if ( tokenName == "cons" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL && CurrentNode->rightNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "list" ) return true ;
-
-	else if ( tokenName == "quote" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "define" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL && CurrentNode->rightNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "car" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "atom?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "pair?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "null?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "integer?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "real?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "number?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "string?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "boolean?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "symbol?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "+" ) {
-		if ( CurrentNode->rightNode == NULL && CurrentNode->rightNode->rightNode != NULL )
-			return false ;
-		else return true ;
-	} // if
-
-	else if ( tokenName == "-" ) {
-		if ( CurrentNode->rightNode == NULL && CurrentNode->rightNode->rightNode != NULL )
-			return false ;
-		else return true ;
-	} // if
-
-	else if ( tokenName == "*" ) {
-		if ( CurrentNode->rightNode == NULL && CurrentNode->rightNode->rightNode != NULL )
-			return false ;
-		else return true ;
-	} // if
-
-	else if ( tokenName == "/" ) {
-		if ( CurrentNode->rightNode == NULL && CurrentNode->rightNode->rightNode != NULL )
-			return false ;
-		else return true ;
-	} // if
-
-	else if ( tokenName == "not" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "and" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "or" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == ">" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == ">=" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "<" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "<=" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "=" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "string-append" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "string>?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "string<?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "string=?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "eqv?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "equal?" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL && CurrentNode->rightNode->rightNode == NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "begin" ) {
-		if ( CurrentNode->rightNode != NULL )
-			return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "if" ) {
-		if ( CurrentNode->rightNode != NULL && CurrentNode->rightNode->rightNode != NULL ) {
-			if ( CurrentNode->rightNode->rightNode->rightNode != NULL ) {
-				if ( CurrentNode->rightNode->rightNode->rightNode->rightNode != NULL )
-					return false;
-				else return true;
-			} // if
-
-			return true;
-		} // if
-
-		else return false ;
-	} // if
-
-	else if ( tokenName == "cond" ) {
-		if ( CurrentNode->rightNode != NULL ) return true ;
-		else return false ;
-	} // if
-
-	else if ( tokenName == "clear-environment" ) {
-		if ( CurrentNode->rightNode != NULL ) return false ;
-		else return true ;
-	} // if
-
-  return false ;
-} // CheckParameter()
 // ------------------Setting Function--------------------- //
 /*
 void SetFunctionType( int & functionType ,string tokenName ) {
@@ -434,7 +178,7 @@ void SetErrorMsg( int errorType, string errorToken, int line, int column ) {
 	gErrorColumn = column;
 } // SetErrorMsg()
 
-void GlobalVariableReset() {
+void GlobalVariableInitial() {
 	gTreeRoot = NULL;
 	gCurrentNode = NULL;
 	gTokens.clear();
@@ -443,8 +187,341 @@ void GlobalVariableReset() {
 	gErrorMsgType = NO_ERROR;
 	gErrorMsgName = "\0";
 	gAtomType = 0;
-} // GlobalVariableReset()
+  gResult.resultBinding = NULL ;
+  gResult.resultFloat = 0.000;
+  gResult.resultInt = 0;
+  gResult.resultMsg = "\0" ;
+  gResult.intBool = false ;
+  gResult.FloatBool = false ;
+  } // GlobalVariableReset()
 
+
+// ------------------JudgeMent Function--------------------- //
+bool ExitDetect() {
+  int nilExit = -1;
+  int exitNil = -1;
+  string tokenString = "\0";
+
+  for ( int i = 0 ; i < gTokens.size() ; i++ )
+    tokenString += gTokens[i].tokenName;
+
+  nilExit = (int) tokenString.find("(nil.exit)");
+  exitNil = (int) tokenString.find("(exit.nil)");
+
+  if ( tokenString == "(exit)" || nilExit != -1 || exitNil != -1 ) {
+    gIsEnd = true;
+    return true;
+  } // if
+
+
+  return false;
+} // ExitDetect()
+
+bool IsAtom( int typeNum ) {
+  if ( typeNum == SYMBOL || typeNum == INT ||
+       typeNum == FLOAT || typeNum == STRING ||
+       typeNum == NIL || typeNum == T )
+    return true;
+
+  else return false;
+} // IsAtom()
+
+bool IsFunction( string tokenName ) {
+  if ( tokenName == "cons" || tokenName == "list" || tokenName == "quote" || tokenName == "define" ||
+       tokenName == "car" || tokenName == "cdr" || tokenName == "atom?" || tokenName == "pair?" ||
+       tokenName == "list?" || tokenName == "null?" || tokenName == "integer?" || tokenName == "real?" ||
+       tokenName == "number?" || tokenName == "string?" || tokenName == "boolean?" || tokenName == "symbol?" ||
+       tokenName == "+" || tokenName == "-" || tokenName == "*" || tokenName == "/" || tokenName == "not" ||
+       tokenName == "and" || tokenName == "or" || tokenName == ">" || tokenName == ">=" || tokenName == "<" ||
+       tokenName == "<=" || tokenName == "=" || tokenName == "string-append" || tokenName == "string>?" ||
+       tokenName == "string<?" || tokenName == "string=?" || tokenName == "eqv?" || tokenName == "equal?" ||
+       tokenName == "begin" || tokenName == "if" || tokenName == "cond" || tokenName == "clean-environment" )
+    return true ;
+  else return false ;
+} // IsFunction()
+
+bool CheckParameterNum( TokenTree * currentNode, string tokenName ) {
+  if ( tokenName == "cons" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "list" ) {
+    TokenTree * walkNode = currentNode ;
+    bool inDefinition = false ;
+    while ( walkNode->rightNode != NULL ) {
+      if ( walkNode->rightNode->leftToken != NULL ) {
+        if ( walkNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+          for ( int i = 0 ; i < gDefineSymbols.size(); i++ ) {
+            if ( walkNode->rightNode->leftToken->tokenName == gDefineSymbols[i].symbolName )
+              inDefinition = true ;
+          } // for
+          
+          if ( !inDefinition ) {
+            SetErrorMsg( UNBOND_ERROR, walkNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+            return false;
+          } // if : not in definition -> return false
+          
+          inDefinition = false ;
+        } //if
+      } // if : check symbol in define set
+      
+      walkNode = walkNode->rightNode ;
+    } // while : check right node type
+    
+    
+    if ( walkNode->leftToken != NULL ) {
+      if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+        for ( int i = 0 ; i < gDefineSymbols.size(); i++ ) {
+          if ( walkNode->leftToken->tokenName == gDefineSymbols[i].symbolName )
+            inDefinition = true ;
+        } // for
+        
+        if ( !inDefinition ) {
+          SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, 0, 0 ) ;
+          return false;
+        } // if : not in definition -> return false
+        
+        inDefinition = false ;
+      } //if
+    } // if : check symbol in define set
+    
+    return true ;
+  } // if : list
+  
+  else if ( tokenName == "quote" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else {
+      return false ;
+    } //
+  } // if
+
+  else if ( tokenName == "define" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
+      if ( currentNode->rightNode->leftToken != NULL ) {
+        if ( currentNode->rightNode->leftToken->tokenTypeNum != SYMBOL ) {
+          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0) ;
+          return false;
+        } // if : type error
+        
+        else return true ;
+      } // if
+      
+      else {
+        SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->leftToken->tokenName, 0, 0) ; // qoute or dot-piar behind define
+        return false ;
+      } // if : type error
+      
+    } // if
+    
+    else {
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+      return false ;
+    } // else : Num error
+  } // if : define
+
+  else if ( tokenName == "car" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "atom?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "pair?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "null?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "integer?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "real?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "number?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "string?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "boolean?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "symbol?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "+" ) {
+    if ( currentNode->rightNode == NULL && currentNode->rightNode->rightNode != NULL )
+      return false ;
+    else return true ;
+  } // if
+
+  else if ( tokenName == "-" ) {
+    if ( currentNode->rightNode == NULL && currentNode->rightNode->rightNode != NULL )
+      return false ;
+    else return true ;
+  } // if
+
+  else if ( tokenName == "*" ) {
+    if ( currentNode->rightNode == NULL && currentNode->rightNode->rightNode != NULL )
+      return false ;
+    else return true ;
+  } // if
+
+  else if ( tokenName == "/" ) {
+    if ( currentNode->rightNode == NULL && currentNode->rightNode->rightNode != NULL )
+      return false ;
+    else return true ;
+  } // if
+
+  else if ( tokenName == "not" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "and" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "or" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == ">" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == ">=" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "<" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "<=" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "=" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "string-append" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "string>?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "string<?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "string=?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "eqv?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "equal?" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "begin" ) {
+    if ( currentNode->rightNode != NULL )
+      return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "if" ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL ) {
+      if ( currentNode->rightNode->rightNode->rightNode != NULL ) {
+        if ( currentNode->rightNode->rightNode->rightNode->rightNode != NULL )
+          return false;
+        else return true;
+      } // if
+
+      return true;
+    } // if
+
+    else return false ;
+  } // if
+
+  else if ( tokenName == "cond" ) {
+    if ( currentNode->rightNode != NULL ) return true ;
+    else return false ;
+  } // if
+
+  else if ( tokenName == "clear-environment" ) {
+    if ( currentNode->rightNode != NULL ) return false ;
+    else return true ;
+  } // if
+
+  return false ;
+} // CheckParameter()
 
 
 // ------------------Get Token--------------------- //
@@ -1110,180 +1187,202 @@ void PrintErrorMessage() {
     cout << "ERROR (attempt to apply non-function) : " << gErrorMsgName << endl;
 	else if ( gErrorMsgType == UNBOND_ERROR )
 		cout << "ERROR (unbound symbol) : "<< gErrorMsgName << endl;
+  else if ( gErrorMsgType == PARAMETER_TYPE_ERROR )
+    cout << "ERROR (car with incorrect argument type) : " << gErrorMsgName << endl ;
   
 } // PrintErrorMessage()
 
-void PrintSExpTree( TokenTree * CurrentNode ) {
+void PrintSExpTree( TokenTree * currentNode ) {
 	cout << "PrintSExpTree()" << endl;
 } // PrintSExpTree()
 
-bool PrintDefinition( ) {
-	for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
-		if ( gTokens[0].tokenName == gDefineSymbols[i].symbolName ) {
-			if( gDefineSymbols[i].binding->leftToken != NULL )
-				cout << gDefineSymbols[i].binding->leftToken->tokenName << endl;
-			else PrintSExpTree( gDefineSymbols[i].binding ) ;
-			return true ;
-		} // if
-	} // for
 
-	SetErrorMsg( UNBOND_ERROR, gTokens[0].tokenName, 0, 0 ) ;
-	return false ;
-}  // PrintDefinition()
+void PrintFunctionMsg() {
+  if ( gResult.resultMsg != "\0" ) cout << gResult.resultMsg << endl ;
+  
+  if ( gResult.intBool ) cout << gResult.resultInt << endl ;
+  
+  if ( gResult.FloatBool ) cout << gResult.resultFloat << endl;
+  
+  if( gResult.resultBinding != NULL ) PrintSExpTree( gResult.resultBinding ) ;
+  
+} // PrintFunctionMsg()
 
 // ------------------Functional Function--------------------- //
 
-bool Cons( TokenTree* CurrentNode ) {
+bool Cons( TokenTree* currentNode ) {
   
   return true ;
 }  // Cons()
 
-bool List( TokenTree* CurrentNode ) {
+bool List( TokenTree* currentNode ) {
+  if ( currentNode->rightNode != NULL )
+    gResult.resultBinding = currentNode->rightNode ;  // return tree without list
   return true ;
 } // List()
 
-bool Quote( TokenTree* CurrentNode ) {
+bool Quote( TokenTree* currentNode ) {
+  TokenTree * notQuoteNode = currentNode ;
+  if( currentNode->backNode != NULL )           // ( quote case )
+    currentNode = currentNode->backNode ;       // ( function quote case )
+  
+  while( notQuoteNode->leftToken != NULL && notQuoteNode->leftToken->tokenName == "quote" ) {
+    notQuoteNode = notQuoteNode->rightNode->leftNode ;
+  } // while : Find not quote node
+  
+  if ( currentNode->leftNode != NULL ) currentNode->leftNode = notQuoteNode ;    // ( quote case )
+  else currentNode = notQuoteNode ;                                 // ( function quote case )
+  gResult.resultBinding = currentNode ;
   return true ;
 } // Quote
 
-bool Define( TokenTree* CurrentNode ) {
+bool Define( TokenTree* currentNode ) {
 	DefineSymbol temp ;
-	temp.symbolName = CurrentNode->rightNode->leftToken->tokenName ;
-	temp.binding = CurrentNode->rightNode->rightNode ;
+	temp.symbolName = currentNode->rightNode->leftToken->tokenName ;
+	temp.binding = currentNode->rightNode->rightNode ;
+  
+  for ( int i = 0; i < gDefineSymbols.size(); i++ ) {
+    if( temp.symbolName == gDefineSymbols[i].symbolName ) {
+      gDefineSymbols[i].binding = currentNode->rightNode->rightNode ;
+      gResult.resultMsg =  temp.symbolName + " defined" ;
+      return true;
+    } // if
+  } // for : find same definition
+  
 	gDefineSymbols.push_back( temp ) ;
-	cout << temp.symbolName << " defined"<< endl;
+	gResult.resultMsg =  temp.symbolName + " defined" ;
   return true ;
 } // DefineSymbol()
 
-bool Car( TokenTree* CurrentNode ) {
+bool Car( TokenTree* currentNode ) {
   return true ;
 } // Car()
 
-bool Cdr( TokenTree* CurrentNode ) {
+bool Cdr( TokenTree* currentNode ) {
   return true ;
 } // Cdr()
 
-bool Is_Atom( TokenTree* CurrentNode ) {
+bool Is_Atom( TokenTree* currentNode ) {
   return true ;
 } // Is_Atom
 
-bool Is_Pair( TokenTree* CurrentNode ) {
+bool Is_Pair( TokenTree* currentNode ) {
   return true ;
 } // Is_Pair()
 
-bool Is_List( TokenTree* CurrentNode ) {
+bool Is_List( TokenTree* currentNode ) {
   return true ;
 } // Is_List
 
-bool Is_Null( TokenTree* CurrentNode ) {
+bool Is_Null( TokenTree* currentNode ) {
   return true ;
 } // Is_Null
 
-bool Is_Int( TokenTree* CurrentNode ) {
+bool Is_Int( TokenTree* currentNode ) {
   return true ;
 } // Is_Int()
 
-bool Is_Real( TokenTree* CurrentNode ) {
+bool Is_Real( TokenTree* currentNode ) {
   return true ;
 } // Is_Real()
 
-bool Is_Num( TokenTree* CurrentNode ) {
+bool Is_Num( TokenTree* currentNode ) {
   return true ;
 } // Is_Num()
 
-bool Is_Str( TokenTree* CurrentNode ) {
+bool Is_Str( TokenTree* currentNode ) {
   return true ;
 } // Is_Str()
 
-bool Is_Bool( TokenTree* CurrentNode ) {
+bool Is_Bool( TokenTree* currentNode ) {
   return true ;
 } // Is_Bool
 
-bool Is_Symbol( TokenTree* CurrentNode ) {
+bool Is_Symbol( TokenTree* currentNode ) {
   return true ;
 } // Is_Symbol()
 
-bool Plus( TokenTree* CurrentNode ) {
+bool Plus( TokenTree* currentNode ) {
   return true ;
 } // Plus()
 
-bool Minus( TokenTree* CurrentNode ) {
+bool Minus( TokenTree* currentNode ) {
   return true ;
 } // Minus
 
-bool Div( TokenTree* CurrentNode ){
+bool Div( TokenTree* currentNode ){
   return true ;
 } // Div()
 
-bool Mult( TokenTree* CurrentNode ) {
+bool Mult( TokenTree* currentNode ) {
   return true ;
 } // Mult()
 
-bool Not( TokenTree* CurrentNode ) {
+bool Not( TokenTree* currentNode ) {
   return true ;
 } // Not()
 
-bool And( TokenTree* CurrentNode ) {
+bool And( TokenTree* currentNode ) {
   return true ;
 } // And()
 
-bool Or( TokenTree* CurrentNode ) {
+bool Or( TokenTree* currentNode ) {
   return true ;
 } // Or()
 
-bool Greater( TokenTree* CurrentNode ) {
+bool Greater( TokenTree* currentNode ) {
   return true ;
 } // Greater()
 
-bool GreaterEqual( TokenTree* CurrentNode ) {
+bool GreaterEqual( TokenTree* currentNode ) {
   return true ;
 } // GreaterEqual()
 
-bool Less( TokenTree* CurrentNode ) {
+bool Less( TokenTree* currentNode ) {
   return true ;
 } // Less()
 
-bool LessEqual( TokenTree* CurrentNode ) {
+bool LessEqual( TokenTree* currentNode ) {
   return true ;
 } // LessEqual()
 
-bool Equal( TokenTree* CurrentNode ) {
+bool Equal( TokenTree* currentNode ) {
   return true ;
 } // Equal()
 
-bool Str_Append( TokenTree* CurrentNode ) {
+bool Str_Append( TokenTree* currentNode ) {
   return true ;
 } // Str_Append()
 
-bool Is_Str_Greater(  TokenTree* CurrentNode) {
+bool Is_Str_Greater(  TokenTree* currentNode) {
   return true ;
 } // Is_Str_Greater()
 
-bool Is_Str_Less( TokenTree* CurrentNode ) {
+bool Is_Str_Less( TokenTree* currentNode ) {
   return true ;
 } // Is_Str_Less()
 
-bool Is_Str_Equal( TokenTree* CurrentNode ) {
+bool Is_Str_Equal( TokenTree* currentNode ) {
   return true ;
 } // Is_Str_Equal()
 
-bool Is_Eqv( TokenTree* CurrentNode ) {
+bool Is_Eqv( TokenTree* currentNode ) {
   return true ;
 } // Is_Equal()
 
-bool Is_Equal( TokenTree* CurrentNode ) {
+bool Is_Equal( TokenTree* currentNode ) {
   return true ;
 } // Is_Equal()
 
-bool Begin( TokenTree* CurrentNode ) {
+bool Begin( TokenTree* currentNode ) {
   return true ;
 } // Begin()
 
-bool If(  TokenTree* CurrentNode) {
+bool If(  TokenTree* currentNode) {
   return true ;
 } // If()
 
-bool Cond( TokenTree* CurrentNode ) {
+bool Cond( TokenTree* currentNode ) {
   return true ;
 } // Cond()
 
@@ -1292,44 +1391,44 @@ bool Clear_Env( ){
   return true;
 } // Clear_Env()
 
-bool FindCorrespondFunction( TokenTree* CurrentNode, string tokenName  ) {
-  if ( tokenName == "cons" ) return Cons( CurrentNode ) ;
-  else if ( tokenName == "list" ) return List( CurrentNode ) ;
-  else if ( tokenName == "quote" ) return Quote( CurrentNode ) ;
-  else if ( tokenName == "define" ) return Define(CurrentNode ) ;
-  else if ( tokenName == "car" ) return Car( CurrentNode ) ;
-  else if ( tokenName == "cdr" ) return Cdr( CurrentNode ) ;
-  else if ( tokenName == "atom?" ) return Is_Atom( CurrentNode ) ;
-  else if ( tokenName == "pair?" ) return Is_Pair( CurrentNode ) ;
-  else if ( tokenName == "list?" ) return Is_List( CurrentNode ) ;
-  else if ( tokenName == "null?" ) return Is_Null( CurrentNode ) ;
-  else if ( tokenName == "integer?" ) return Is_Int( CurrentNode ) ;
-  else if ( tokenName == "real?" ) return Is_Real( CurrentNode ) ;
-  else if ( tokenName == "number?" ) return Is_Num( CurrentNode ) ;
-  else if ( tokenName == "string?" ) return Is_Str( CurrentNode ) ;
-  else if ( tokenName == "boolean?" ) return Is_Bool( CurrentNode ) ;
-  else if ( tokenName == "symbol?" ) return Is_Symbol( CurrentNode ) ;
-  else if ( tokenName == "+" ) return Plus( CurrentNode ) ;
-  else if ( tokenName == "-" ) return Minus( CurrentNode ) ;
-  else if ( tokenName == "*" ) return Mult( CurrentNode ) ;
-  else if ( tokenName == "/" ) return Div( CurrentNode ) ;
-  else if ( tokenName == "not" )  return Not( CurrentNode ) ;
-  else if ( tokenName == "and" ) return And( CurrentNode ) ;
-  else if ( tokenName == "or" ) return Or( CurrentNode ) ;
-  else if ( tokenName == ">" ) return Greater( CurrentNode ) ;
-  else if ( tokenName == ">=" ) return GreaterEqual( CurrentNode ) ;
-  else if ( tokenName == "<" ) return Less( CurrentNode ) ;
-  else if ( tokenName == "<=" ) return LessEqual( CurrentNode ) ;
-  else if ( tokenName == "=" ) return Equal( CurrentNode ) ;
-  else if ( tokenName == "string-append" ) return Str_Append( CurrentNode ) ;
-  else if ( tokenName == "string>?" ) return Is_Str_Greater( CurrentNode ) ;
-  else if ( tokenName == "string<?" ) return Is_Str_Less( CurrentNode ) ;
-  else if ( tokenName == "string=?" ) return Is_Str_Equal( CurrentNode ) ;
-  else if ( tokenName == "eqv?" ) return Is_Eqv( CurrentNode ) ;
-  else if ( tokenName == "equal?" ) return Is_Equal( CurrentNode ) ;
-  else if ( tokenName == "begin" ) return Begin( CurrentNode ) ;
-  else if ( tokenName == "if" ) return If( CurrentNode ) ;
-  else if ( tokenName == "cond" ) return Cond( CurrentNode ) ;
+bool FindCorrespondFunction( TokenTree* currentNode, string tokenName  ) {
+  if ( tokenName == "cons" ) return Cons( currentNode ) ;
+  else if ( tokenName == "list" ) return List( currentNode ) ;
+  else if ( tokenName == "quote" ) return Quote( currentNode ) ;
+  else if ( tokenName == "define" ) return Define(currentNode ) ;
+  else if ( tokenName == "car" ) return Car( currentNode ) ;
+  else if ( tokenName == "cdr" ) return Cdr( currentNode ) ;
+  else if ( tokenName == "atom?" ) return Is_Atom( currentNode ) ;
+  else if ( tokenName == "pair?" ) return Is_Pair( currentNode ) ;
+  else if ( tokenName == "list?" ) return Is_List( currentNode ) ;
+  else if ( tokenName == "null?" ) return Is_Null( currentNode ) ;
+  else if ( tokenName == "integer?" ) return Is_Int( currentNode ) ;
+  else if ( tokenName == "real?" ) return Is_Real( currentNode ) ;
+  else if ( tokenName == "number?" ) return Is_Num( currentNode ) ;
+  else if ( tokenName == "string?" ) return Is_Str( currentNode ) ;
+  else if ( tokenName == "boolean?" ) return Is_Bool( currentNode ) ;
+  else if ( tokenName == "symbol?" ) return Is_Symbol( currentNode ) ;
+  else if ( tokenName == "+" ) return Plus( currentNode ) ;
+  else if ( tokenName == "-" ) return Minus( currentNode ) ;
+  else if ( tokenName == "*" ) return Mult( currentNode ) ;
+  else if ( tokenName == "/" ) return Div( currentNode ) ;
+  else if ( tokenName == "not" )  return Not( currentNode ) ;
+  else if ( tokenName == "and" ) return And( currentNode ) ;
+  else if ( tokenName == "or" ) return Or( currentNode ) ;
+  else if ( tokenName == ">" ) return Greater( currentNode ) ;
+  else if ( tokenName == ">=" ) return GreaterEqual( currentNode ) ;
+  else if ( tokenName == "<" ) return Less( currentNode ) ;
+  else if ( tokenName == "<=" ) return LessEqual( currentNode ) ;
+  else if ( tokenName == "=" ) return Equal( currentNode ) ;
+  else if ( tokenName == "string-append" ) return Str_Append( currentNode ) ;
+  else if ( tokenName == "string>?" ) return Is_Str_Greater( currentNode ) ;
+  else if ( tokenName == "string<?" ) return Is_Str_Less( currentNode ) ;
+  else if ( tokenName == "string=?" ) return Is_Str_Equal( currentNode ) ;
+  else if ( tokenName == "eqv?" ) return Is_Eqv( currentNode ) ;
+  else if ( tokenName == "equal?" ) return Is_Equal( currentNode ) ;
+  else if ( tokenName == "begin" ) return Begin( currentNode ) ;
+  else if ( tokenName == "if" ) return If( currentNode ) ;
+  else if ( tokenName == "cond" ) return Cond( currentNode ) ;
   else if ( tokenName == "clear-environment" ) return Clear_Env() ;
   return false;
 } // FindCorrespondFunction()
@@ -1338,33 +1437,44 @@ bool FindCorrespondFunction( TokenTree* CurrentNode, string tokenName  ) {
 
 // ------------------Evaluate Function--------------------- //
 
-bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
+bool FindDefinition( ) {
+  for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
+    if ( gTokens[0].tokenName == gDefineSymbols[i].symbolName ) {
+      if( gDefineSymbols[i].binding->leftToken != NULL )
+        gResult.resultMsg = gDefineSymbols[i].binding->leftToken->tokenName ;
+      else gResult.resultBinding = gDefineSymbols[i].binding ;
+      return true ;
+    } // if
+  } // for
+
+  SetErrorMsg( UNBOND_ERROR, gTokens[0].tokenName, 0, 0 ) ;
+  return false ;
+}  // PrintDefinition()
+
+bool TraversalTreeAndCheck( TokenTree * currentNode ) {
   static bool quoteScope = false ;
-	if ( CurrentNode != NULL) {
+	if ( currentNode != NULL) {
     
-    if ( CurrentNode->leftToken != NULL ){
-      if ( CurrentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = true ;
+    if ( currentNode->leftToken != NULL ){
+      if ( currentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = true ;
     } // if
     
-    if( !TraversalTreeAndCheck( CurrentNode->leftNode ) ) return false;
-    if( !TraversalTreeAndCheck( CurrentNode->rightNode ) ) return false;
+    if( !TraversalTreeAndCheck( currentNode->leftNode ) ) return false;
+    if( !TraversalTreeAndCheck( currentNode->rightNode ) ) return false;
 		
-    if ( CurrentNode->leftToken != NULL ) {
-			if ( IsFunction( CurrentNode->leftToken->tokenName ) ) {
-        if ( CurrentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = false ;
-        if ( CheckParameterNum( CurrentNode, CurrentNode->leftToken->tokenName )  ){
-          FindCorrespondFunction( CurrentNode, CurrentNode->leftToken->tokenName ) ;
-					// cout << CurrentNode->leftToken->tokenName << endl;
+    if ( currentNode->leftToken != NULL ) {
+			if ( IsFunction( currentNode->leftToken->tokenName ) ) {
+        if ( currentNode->leftToken->tokenTypeNum == QUOTE ) quoteScope = false ;
+        if ( CheckParameterNum( currentNode, currentNode->leftToken->tokenName )  ){
+          FindCorrespondFunction( currentNode, currentNode->leftToken->tokenName ) ;
+					// cout << currentNode->leftToken->tokenName << endl;
         } // if
         
-				else {
-          SetErrorMsg( PARAMETER_NUM_ERROR, CurrentNode->leftToken->tokenName, 0, 0) ;
-					return false;
-				} // else : parameter error
+				else return false;
 			} // if : is Function Check
       
-      else if ( CurrentNode->NeedToBePrimitive == true && !quoteScope ) {
-        SetErrorMsg( NO_APPLY_ERROR, CurrentNode->leftToken->tokenName, 0, 0) ;
+      else if ( currentNode->NeedToBePrimitive == true && !quoteScope ) {
+        SetErrorMsg( NO_APPLY_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
         return false;
       } // if : not function but has to be
 		} // if
@@ -1376,8 +1486,8 @@ bool TraversalTreeAndCheck( TokenTree * CurrentNode ) {
 
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
-  if ( gCurrentNode == NULL ) {                                         // find definition symbol
-  	if ( PrintDefinition() ) return true ;
+  if ( gCurrentNode == NULL ) {                   // find definition symbol
+  	if ( FindDefinition() ) return true ;
   	else return false ;
   } // if
   
@@ -1395,14 +1505,16 @@ int main() {
 	while ( uTestNum != '\n' ) {
 		uTestNum = cin.get();
 	} // while
-
+  
+  GlobalVariableInitial() ;
 
 	do {
 		cout << "> ";
 		if ( GetToken()) {
 			if ( SyntaxChecker()) {
 				if ( !ExitDetect()) {
-					if ( !EvaluateSExp() ) PrintErrorMessage();
+          if ( EvaluateSExp() ) PrintFunctionMsg() ;
+          else PrintErrorMessage();
 					ClearSpaceAndOneLine();
 				} // if
 			} // if
@@ -1420,7 +1532,7 @@ int main() {
 			InitialLineColumn();
 		} // else
 
-		GlobalVariableReset();
+		GlobalVariableInitial();
 	} while ( !gIsEnd );
 
 
