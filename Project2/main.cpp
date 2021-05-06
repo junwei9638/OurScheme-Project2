@@ -33,11 +33,7 @@ struct DefineSymbol {
 }; // DefineSymbol Symbol
 
 struct Result {
-  string resultMsg;
-  int resultInt;
-  bool intBool ;
-  bool floatBool ;
-  float resultFloat;
+  Token resultStruct ;
   TokenTree *resultBinding;
 }; // DefineSymbol Symbol
 
@@ -190,10 +186,8 @@ void GlobalVariableInitial() {
   gResultList.clear();
 } // GlobalVariableReset()
 
-void InitialResult( Result result) {
-  result.floatBool = false ;
-  result.intBool = false ;
-  result.resultMsg = "\0" ;
+void InitialResult( Result & result) {
+  result.resultStruct.tokenName = "\0" ;
   result.resultBinding = NULL ;
 } //InitialResult()
 
@@ -241,6 +235,24 @@ bool IsFunction( string tokenName ) {
     return true ;
   else return false ;
 } // IsFunction()
+
+
+bool FindDefinition( string tokenName ) {
+  Result result ;
+  InitialResult( result ) ;
+  for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
+    if ( tokenName == gDefineSymbols[i].symbolName ) {
+      if ( gDefineSymbols[i].binding->rightNode == NULL && gDefineSymbols[i].binding->leftNode == NULL )
+        result.resultStruct.tokenName = gDefineSymbols[i].binding->leftToken->tokenName ; // single node
+      else result.resultBinding = gDefineSymbols[i].binding ;
+      gResultList.push_back( result ) ;
+      return true ;
+    } // if
+  } // for
+
+  SetErrorMsg( UNBOND_ERROR, gTokens[0].tokenName, 0, 0 ) ;
+  return false ;
+}  // FindDefinition()
 
 bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   if ( tokenName == "cons" ) {
@@ -295,9 +307,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   else if ( tokenName == "quote" ) {
     if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
       return true ;
-    else {
-      return false ;
-    } //
+    else return false ;
   } // if
 
   else if ( tokenName == "define" ) {
@@ -783,11 +793,11 @@ bool GetToken() {
 // ------------------Tree Build--------------------- //
 
 
-void InitialNode() {
-	gCurrentNode->leftNode = NULL;
-	gCurrentNode->leftToken = NULL;
-	gCurrentNode->rightNode = NULL;
-	gCurrentNode->rightToken = NULL;
+void InitialNode( TokenTree * currentNode ) {
+	currentNode->leftNode = NULL;
+	currentNode->leftToken = NULL;
+	currentNode->rightNode = NULL;
+	currentNode->rightToken = NULL;
 } // InitialNode()
 
 void InsertAtomToTree() {
@@ -818,7 +828,7 @@ void InsertAtomToTree() {
 					gCurrentNode->rightNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->rightNode;
           gCurrentNode->NeedToBePrimitive = false ;
-					InitialNode();
+					InitialNode( gCurrentNode );
 					gCurrentNode->leftToken = new Token;
 					gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
 					gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
@@ -850,7 +860,7 @@ void InsertAtomToTree() {
 				gCurrentNode->rightNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->rightNode;
         gCurrentNode->NeedToBePrimitive = false ;
-				InitialNode();
+				InitialNode( gCurrentNode );
 				gCurrentNode->leftToken = new Token;
 				gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
 				gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
@@ -871,7 +881,7 @@ void BuildTree() {
 		gCurrentNode = gTreeRoot;
 		gCurrentNode->backNode = NULL ;
     gCurrentNode->NeedToBePrimitive = true ;
-		InitialNode();
+		InitialNode( gCurrentNode );
 	} // if
 
 	else {
@@ -881,7 +891,7 @@ void BuildTree() {
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
         gCurrentNode->NeedToBePrimitive = true ;
-				InitialNode();
+				InitialNode( gCurrentNode );
 			} // if
 
 			else if ( gCurrentNode->leftNode != NULL ) {          // left node !null
@@ -901,14 +911,14 @@ void BuildTree() {
 				gCurrentNode->rightNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->rightNode;
         gCurrentNode->NeedToBePrimitive = false ;
-				InitialNode();
+				InitialNode( gCurrentNode );
 
 				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {    // if !dot-> create left node
 					gCurrentNode->leftNode = new TokenTree;
 					gCurrentNode->leftNode->backNode = gCurrentNode;
 					gCurrentNode = gCurrentNode->leftNode;
           gCurrentNode->NeedToBePrimitive = true ;
-					InitialNode();
+					InitialNode( gCurrentNode );
 				} // if
 
 			} // if
@@ -931,14 +941,14 @@ void BuildTree() {
 			gCurrentNode->rightNode->backNode = gCurrentNode;
 			gCurrentNode = gCurrentNode->rightNode;
       gCurrentNode->NeedToBePrimitive = false;
-			InitialNode();
+			InitialNode( gCurrentNode );
 
 			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create left node
 				gCurrentNode->leftNode = new TokenTree;
 				gCurrentNode->leftNode->backNode = gCurrentNode;
 				gCurrentNode = gCurrentNode->leftNode;
         gCurrentNode->NeedToBePrimitive = true ;
-				InitialNode();
+				InitialNode( gCurrentNode );
 			} // if
 
 		} // if
@@ -1194,20 +1204,50 @@ void PrintErrorMessage() {
   
 } // PrintErrorMessage()
 
-void PrintSExpTree( TokenTree * currentNode ) {
-	cout << "PrintSExpTree()" << endl;
+void PrintSExpTree( TokenTree * currentNode, bool isRightNode, int & layer ) {
+static bool lineReturn = false ;
+  if ( !isRightNode ) {
+    cout << "( " ;
+    lineReturn = false ;
+    layer ++ ;
+  } // if
+  
+  if ( lineReturn )
+    for( int i = 0; i < layer; i++ ) cout << "  " ;
+  
+  if ( currentNode->leftToken != NULL ) {
+    cout << currentNode->leftToken->tokenName << endl ;
+    lineReturn = true ;
+  } // if
+  
+  if ( currentNode->rightToken != NULL ) {
+    for( int i = 0; i < layer; i++ ) cout << "  " ;
+    cout << "." << endl ;
+    for( int i = 0; i < layer; i++ ) cout << "  " ;
+    cout << currentNode->rightToken->tokenName << endl ;
+    lineReturn = true ;
+  } // if
+  
+  if ( currentNode->leftNode ) PrintSExpTree( currentNode->leftNode, false, layer ) ;
+  if ( currentNode->rightNode ) PrintSExpTree( currentNode->rightNode, true, layer ) ;
+  
+  if ( layer > 1  ) {
+    lineReturn = true ;
+    layer -- ;
+    for( int i = 0; i < layer; i++ ) cout << "  " ;
+    cout << ")" << endl ;
+  } // if
 } // PrintSExpTree()
 
 
 void PrintFunctionMsg() {
-  if ( gResultList[0].resultMsg != "\0" ) cout << gResultList[0].resultMsg << endl ;
+  int layer = 0;
+  if ( gResultList[0].resultStruct.tokenName != "\0" ) cout << gResultList[0].resultStruct.tokenName << endl ;
   
-  if ( gResultList[0].intBool ) cout << gResultList[0].resultInt << endl ;
-  
-  if ( gResultList[0].floatBool ) cout << gResultList[0].resultFloat << endl;
-  
-  if( gResultList[0].resultBinding != NULL ) PrintSExpTree( gResultList[0].resultBinding ) ;
-  
+  else if ( gResultList[0].resultBinding != NULL ) {
+    PrintSExpTree( gResultList[0].resultBinding, false, layer ) ;
+    for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
+  } // if
 } // PrintFunctionMsg()
 
 // ------------------Functional Function--------------------- //
@@ -1218,16 +1258,92 @@ void Cons( TokenTree* currentNode ) {
 }  // Cons()
 
 void List( TokenTree* currentNode ) {
-  TokenTree* connectNode = NULL ;
-  //while ( currentNode->rightNode != NULL ){
+  Result result ;
+  InitialResult( result ) ;
+  TokenTree* resultRootNode = NULL;
+  TokenTree* resultWalkNode = NULL ;
+  TokenTree* walkNode = currentNode ;
+  
+  if ( walkNode->rightNode != NULL ) {                        // root node
+    resultRootNode = new TokenTree ;
+    resultRootNode->backNode = NULL ;
+    InitialNode( resultRootNode ) ;
+    resultWalkNode = resultRootNode ;
     
-  //} // while
+    walkNode = walkNode->rightNode ;
+    if ( walkNode->leftToken != NULL ) {
+      if ( FindDefinition( walkNode->leftToken->tokenName ) ) {
+        if ( gResultList.back().resultBinding != NULL )     // definition is a node
+          resultWalkNode->leftNode = gResultList.back().resultBinding ;
+        else {
+          resultWalkNode->leftToken = new Token ;
+          resultWalkNode->leftToken->tokenName = gResultList.back().resultStruct.tokenName ;
+        } // else : definition is a token
+        gResultList.pop_back() ;
+      } // if : find if in definition
+      
+      else resultWalkNode->leftToken = walkNode->leftToken ;
+    } // if : get token and check definition
     
+    if ( walkNode->leftNode != NULL ) {
+      if ( gResultList.back().resultBinding != NULL )               // connect node
+        resultWalkNode->leftNode = gResultList.back().resultBinding ;
+      else if ( gResultList.back().resultStruct.tokenName != "\0" ) {
+        resultWalkNode->leftToken = new Token ;
+        resultWalkNode->leftToken->tokenName = gResultList.back().resultStruct.tokenName ;
+        resultWalkNode->leftToken->tokenTypeNum = gResultList.back().resultStruct.tokenTypeNum ;
+      } // if : the result of a fucntion is a token
+      
+      gResultList.pop_back() ;
+    } // if : get node
+  } // if
+  
+  while ( walkNode->rightNode != NULL ){                      // right node
+    walkNode = walkNode->rightNode ;
+    
+    if ( walkNode->leftToken != NULL ) {
+      resultWalkNode->rightNode = new TokenTree ;
+      resultWalkNode = resultWalkNode->rightNode ;
+      InitialNode( resultWalkNode ) ;
+      
+      if ( FindDefinition( walkNode->leftToken->tokenName ) ) {
+        if ( gResultList.back().resultBinding != NULL )     // definition is a node
+          resultWalkNode->leftNode = gResultList.back().resultBinding ;
+        else {
+          resultWalkNode->leftToken = new Token ;
+          resultWalkNode->leftToken->tokenName = gResultList.back().resultStruct.tokenName ;
+        } // else : definition is a token
+        gResultList.pop_back() ;
+      } // if : find if in definition
+      else resultWalkNode->leftToken = walkNode->leftToken ;
+    } // if : get token and check definition
+    
+    if ( walkNode->leftNode != NULL ) {
+      resultWalkNode->rightNode = new TokenTree ;
+      resultWalkNode = resultWalkNode->rightNode ;
+      InitialNode( resultWalkNode ) ;
+      if ( gResultList.back().resultBinding != NULL )
+        resultWalkNode->leftNode = gResultList.back().resultBinding ;
+      
+      else if ( gResultList.back().resultStruct.tokenName != "\0" ) {
+        resultWalkNode->leftToken = new Token ;
+        resultWalkNode->leftToken->tokenName = gResultList.back().resultStruct.tokenName ;
+        resultWalkNode->leftToken->tokenTypeNum = gResultList.back().resultStruct.tokenTypeNum ;
+      } // if : the result of a fucntion is a token
+      
+      gResultList.pop_back() ;
+    } // if : get node
+    
+  } // while
+  
+  result.resultBinding = resultRootNode ;
+  gResultList.push_back( result ) ;
 } // List()
 
 void Quote( TokenTree* currentNode ) {
   TokenTree * notQuoteNode = currentNode ;
   Result result ;
+  InitialResult( result ) ;
   while( notQuoteNode->leftToken != NULL && notQuoteNode->leftToken->tokenName == "quote" ) {
     notQuoteNode = notQuoteNode->rightNode->leftNode ;
   } // while : Find not quote node
@@ -1242,20 +1358,30 @@ void Define( TokenTree* currentNode ) {
   Result result ;
   InitialResult( result ) ;
 	temp.symbolName = currentNode->rightNode->leftToken->tokenName ;
-	temp.binding = currentNode->rightNode->rightNode ;
+  if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {   // another funcion result
+    temp.binding =  gResultList.back().resultBinding;
+    gResultList.pop_back() ;
+  } // if
   
-  for ( int i = 0; i < gDefineSymbols.size(); i++ ) {
+  else temp.binding = currentNode->rightNode->rightNode ;       // no funcion result
+  
+  for ( int i = 0; i < gDefineSymbols.size(); i++ ) {           // find repeat symbol
     if( temp.symbolName == gDefineSymbols[i].symbolName ) {
-      gDefineSymbols[i].binding = currentNode->rightNode->rightNode ;
-      result.resultMsg =  temp.symbolName + " defined" ;
+      if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {   // another funcion result
+        temp.binding =  gResultList.back().resultBinding;
+        gResultList.pop_back() ;
+      } // if
+      
+      else temp.binding = currentNode->rightNode->rightNode ;     // no funcion result
+      result.resultStruct.tokenName =  temp.symbolName + " defined" ;
       return ;
     } // if
   } // for : find same definition
   
 	gDefineSymbols.push_back( temp ) ;
-	result.resultMsg =  temp.symbolName + " defined" ;
+	result.resultStruct.tokenName =  temp.symbolName + " defined" ;
   gResultList.push_back( result ) ;
-} // DefineSymbol()
+} // Define()
 
 bool Car( TokenTree* currentNode ) {
   return true ;
@@ -1439,23 +1565,6 @@ void FindCorrespondFunction( TokenTree* currentNode, string tokenName  ) {
 
 // ------------------Evaluate Function--------------------- //
 
-bool FindDefinition( ) {
-  Result result ;
-  for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
-    if ( gTokens[0].tokenName == gDefineSymbols[i].symbolName ) {
-      if( gDefineSymbols[i].binding->leftToken != NULL )
-        result.resultMsg = gDefineSymbols[i].binding->leftToken->tokenName ;
-      else {
-        result.resultBinding = gDefineSymbols[i].binding ;
-        gResultList.push_back( result ) ;
-      } // else
-      return true ;
-    } // if
-  } // for
-
-  SetErrorMsg( UNBOND_ERROR, gTokens[0].tokenName, 0, 0 ) ;
-  return false ;
-}  // PrintDefinition()
 
 bool TraversalTreeAndCheck( TokenTree * currentNode ) {
   static bool quoteScope = false ;
@@ -1480,7 +1589,13 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
 			} // if : is Function Check
       
       else if ( currentNode->NeedToBePrimitive == true && !quoteScope ) {
-        SetErrorMsg( NO_APPLY_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+        if ( currentNode->leftToken->tokenTypeNum == SYMBOL ) {
+          if ( !FindDefinition( currentNode->leftToken->tokenName ) )
+            SetErrorMsg( UNBOND_ERROR, currentNode->leftToken->tokenName, 0, 0 ) ;
+        } // if
+              
+        else
+          SetErrorMsg( NO_APPLY_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
         return false;
       } // if : not function but has to be
 		} // if
@@ -1493,7 +1608,7 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
   if ( gCurrentNode == NULL ) {                   // find definition symbol
-  	if ( FindDefinition() ) return true ;
+  	if ( FindDefinition( gTokens[0].tokenName ) ) return true ;
   	else return false ;
   } // if
   
