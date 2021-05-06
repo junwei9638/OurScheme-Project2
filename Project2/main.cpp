@@ -236,8 +236,16 @@ bool IsFunction( string tokenName ) {
   else return false ;
 } // IsFunction()
 
+bool CheckDefinition( string tokenName ) {
+  for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
+    if ( tokenName == gDefineSymbols[i].symbolName ) return true ;
+  } // for
 
-bool FindDefinition( string tokenName ) {
+  SetErrorMsg( UNBOND_ERROR, tokenName, 0, 0 ) ;
+  return false;
+}
+
+void PushDefinitionToResultList( string tokenName ) {
   Result result ;
   InitialResult( result ) ;
   for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
@@ -246,18 +254,34 @@ bool FindDefinition( string tokenName ) {
         result.resultStruct.tokenName = gDefineSymbols[i].binding->leftToken->tokenName ; // single node
       else result.resultBinding = gDefineSymbols[i].binding ;
       gResultList.push_back( result ) ;
-      return true ;
     } // if
   } // for
+}  // PushDefinitionToResultList()
 
-  SetErrorMsg( UNBOND_ERROR, gTokens[0].tokenName, 0, 0 ) ;
-  return false ;
-}  // FindDefinition()
+
+
 
 bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   if ( tokenName == "cons" ) {
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL )
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
+      
+      if ( currentNode->rightNode->leftToken != NULL ) {
+        if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+          if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) )
+            return false ;
+        } // if
+      } // 1st node type check
+      
+      if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
+        if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+          if ( !CheckDefinition( currentNode->rightNode->rightNode->leftToken->tokenName ) )
+            return false ;
+        } // if
+      } // 1st node type check
+      
       return true ;
+    } // if
+    
     else return false ;
   } // if
 
@@ -265,15 +289,16 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
     TokenTree * walkNode = currentNode ;
     bool inDefinition = false ;
     while ( walkNode->rightNode != NULL ) {
-      if ( walkNode->rightNode->leftToken != NULL ) {
-        if ( walkNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+      walkNode = walkNode->rightNode ;
+      if ( walkNode->leftToken != NULL ) {
+        if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
           for ( int i = 0 ; i < gDefineSymbols.size(); i++ ) {
-            if ( walkNode->rightNode->leftToken->tokenName == gDefineSymbols[i].symbolName )
+            if ( walkNode->leftToken->tokenName == gDefineSymbols[i].symbolName )
               inDefinition = true ;
           } // for
           
           if ( !inDefinition ) {
-            SetErrorMsg( UNBOND_ERROR, walkNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+            SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, 0, 0 ) ;
             return false;
           } // if : not in definition -> return false
           
@@ -281,25 +306,8 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
         } //if
       } // if : check symbol in define set
       
-      walkNode = walkNode->rightNode ;
     } // while : check right node type
     
-    
-    if ( walkNode->leftToken != NULL ) {
-      if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
-        for ( int i = 0 ; i < gDefineSymbols.size(); i++ ) {
-          if ( walkNode->leftToken->tokenName == gDefineSymbols[i].symbolName )
-            inDefinition = true ;
-        } // for
-        
-        if ( !inDefinition ) {
-          SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, 0, 0 ) ;
-          return false;
-        } // if : not in definition -> return false
-        
-        inDefinition = false ;
-      } //if
-    } // if : check symbol in define set
     
     return true ;
   } // if : list
@@ -1253,6 +1261,16 @@ void PrintFunctionMsg() {
 // ------------------Functional Function--------------------- //
 
 void Cons( TokenTree* currentNode ) {
+  Result result ;
+  InitialResult( result );
+  TokenTree* resultRootNode = NULL;
+  resultRootNode = new TokenTree ;
+  resultRootNode->backNode = NULL ;
+  InitialNode( resultRootNode ) ;
+  
+  if( currentNode->rightNode->leftNode != NULL )
+    resultRootNode->leftNode =
+  
   
   
 }  // Cons()
@@ -1272,7 +1290,8 @@ void List( TokenTree* currentNode ) {
     
     walkNode = walkNode->rightNode ;
     if ( walkNode->leftToken != NULL ) {
-      if ( FindDefinition( walkNode->leftToken->tokenName ) ) {
+      if ( CheckDefinition( walkNode->leftToken->tokenName ) ) {
+        PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
         if ( gResultList.back().resultBinding != NULL )     // definition is a node
           resultWalkNode->leftNode = gResultList.back().resultBinding ;
         else {
@@ -1306,7 +1325,8 @@ void List( TokenTree* currentNode ) {
       resultWalkNode = resultWalkNode->rightNode ;
       InitialNode( resultWalkNode ) ;
       
-      if ( FindDefinition( walkNode->leftToken->tokenName ) ) {
+      if ( CheckDefinition( walkNode->leftToken->tokenName ) ) {
+        PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
         if ( gResultList.back().resultBinding != NULL )     // definition is a node
           resultWalkNode->leftNode = gResultList.back().resultBinding ;
         else {
@@ -1358,25 +1378,27 @@ void Define( TokenTree* currentNode ) {
   Result result ;
   InitialResult( result ) ;
 	temp.symbolName = currentNode->rightNode->leftToken->tokenName ;
+  
+  for ( int i = 0; i < gDefineSymbols.size(); i++ ) {           // find repeat symbol
+    if ( temp.symbolName == gDefineSymbols[i].symbolName ) {
+      if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {   // another funcion result
+        gDefineSymbols[i].binding =  gResultList.back().resultBinding;
+        gResultList.pop_back() ;
+      } // if
+      
+      else gDefineSymbols[i].binding = currentNode->rightNode->rightNode ;     // no funcion result
+      result.resultStruct.tokenName =  temp.symbolName + " defined" ;
+      gResultList.push_back( result ) ;
+      return ;
+    } // if
+  } // for : find same definition
+  
   if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {   // another funcion result
     temp.binding =  gResultList.back().resultBinding;
     gResultList.pop_back() ;
   } // if
   
   else temp.binding = currentNode->rightNode->rightNode ;       // no funcion result
-  
-  for ( int i = 0; i < gDefineSymbols.size(); i++ ) {           // find repeat symbol
-    if( temp.symbolName == gDefineSymbols[i].symbolName ) {
-      if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {   // another funcion result
-        temp.binding =  gResultList.back().resultBinding;
-        gResultList.pop_back() ;
-      } // if
-      
-      else temp.binding = currentNode->rightNode->rightNode ;     // no funcion result
-      result.resultStruct.tokenName =  temp.symbolName + " defined" ;
-      return ;
-    } // if
-  } // for : find same definition
   
 	gDefineSymbols.push_back( temp ) ;
 	result.resultStruct.tokenName =  temp.symbolName + " defined" ;
@@ -1590,7 +1612,7 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
       
       else if ( currentNode->NeedToBePrimitive == true && !quoteScope ) {
         if ( currentNode->leftToken->tokenTypeNum == SYMBOL ) {
-          if ( !FindDefinition( currentNode->leftToken->tokenName ) )
+          if ( !CheckDefinition( currentNode->leftToken->tokenName ) )
             SetErrorMsg( UNBOND_ERROR, currentNode->leftToken->tokenName, 0, 0 ) ;
         } // if
               
@@ -1608,7 +1630,10 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
   if ( gCurrentNode == NULL ) {                   // find definition symbol
-  	if ( FindDefinition( gTokens[0].tokenName ) ) return true ;
+    if ( CheckDefinition( gTokens[0].tokenName ) ) {
+      PushDefinitionToResultList( gTokens[0].tokenName ) ;
+      return true ;
+    }
   	else return false ;
   } // if
   
