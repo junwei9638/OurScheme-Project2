@@ -1094,15 +1094,15 @@ bool SyntaxChecker() {
 } // SyntaxChecker()
 
 // ------------------Print Function--------------------- //
-/*
-void PrintAtom( int i ) {
-	if ( gTokens[i].tokenTypeNum == FLOAT ) {
+void PrintAtom() {
+	if ( gTokens[0].tokenTypeNum == FLOAT ) {
 		cout << fixed << setprecision(3)
-				 << round(atof(gTokens[i].tokenName.c_str()) * 1000) / 1000 << endl;
+				 << round(atof(gTokens[0].tokenName.c_str()) * 1000) / 1000 << endl;
 	} // if
-	else cout << gTokens[i].tokenName << endl;
+	else cout << gTokens[0].tokenName << endl;
 } // PrintAtom()
 
+/*
 bool NeedPrint( int i, int printParenNum ) {
 	if ( i > 0 ) {
 		if ( gTokens[i].tokenTypeNum == LEFTPAREN && gTokens[i - 1].tokenTypeNum == DOT )       // . ( case
@@ -1241,6 +1241,10 @@ void PrintFunctionMsg() {
     PrintSExpTree( gResultList[0].resultBinding, false, layer ) ;
     for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
   } // if
+
+  else {
+		PrintAtom() ;
+  } // else : only one token and not symbol
 } // PrintFunctionMsg()
 
 void PrintErrorMessage() {
@@ -1696,11 +1700,14 @@ bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
   bool quoteScope = false ;
   if ( gCurrentNode == NULL ) {                   // find definition symbol
-    if ( CheckDefinition( gTokens[0].tokenName ) ) {
-      PushDefinitionToResultList( gTokens[0].tokenName ) ;
-      return true ;
-    }
-  	else return false ;
+    if ( gTokens[0].tokenTypeNum == SYMBOL ) {
+    	if ( CheckDefinition( gTokens[0].tokenName ) ) {
+				PushDefinitionToResultList(gTokens[0].tokenName);
+				return true;
+			} // if : symbol in definition
+			else return false ;
+    } // if  : symbol but not in definition
+  	else return true ; // else : not symbol
   } // if
   
   else if ( TraversalTreeAndCheck( gCurrentNode, quoteScope ) ) return true;
