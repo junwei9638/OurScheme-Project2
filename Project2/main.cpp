@@ -1235,11 +1235,13 @@ static bool lineReturn = false ;
 
 void PrintFunctionMsg() {
   int layer = 0;
-  if ( gResultList[0].resultStruct.tokenName != "\0" ) cout << gResultList[0].resultStruct.tokenName << endl ;
+  if( gResultList.size() > 0 ) {
+    if ( gResultList[0].resultStruct.tokenName != "\0" ) cout << gResultList[0].resultStruct.tokenName << endl ;
   
-  else if ( gResultList[0].resultBinding != NULL ) {
-    PrintSExpTree( gResultList[0].resultBinding, false, layer ) ;
-    for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
+    else if ( gResultList[0].resultBinding != NULL ) {
+      PrintSExpTree( gResultList[0].resultBinding, false, layer ) ;
+      for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
+    } // if
   } // if
 
   else {
