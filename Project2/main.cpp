@@ -267,22 +267,29 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
       
       if ( currentNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
-          if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) )
+          if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) ) {
+						SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0 ) ;
             return false ;
+          } // if : not in definition
         } // if
       } // 1st node type check
       
       if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
-          if ( !CheckDefinition( currentNode->rightNode->rightNode->leftToken->tokenName ) )
-            return false ;
+          if ( !CheckDefinition( currentNode->rightNode->rightNode->leftToken->tokenName ) ) {
+						SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->rightNode->leftToken->tokenName, 0, 0 );
+						return false;
+					} // if : not in definition
         } // if
       } // 1st node type check
       
       return true ;
     } // if
-    
-    else return false ;
+
+		else {
+			SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0);
+			return false;
+		} // else : num of parameter error
   } // if
 
   else if ( tokenName == "list" ) {
@@ -1189,28 +1196,6 @@ void PrintSExp() {
 } // PrintSExp()
  */
 
-void PrintErrorMessage() {
-	if ( gErrorMsgType == LEFT_ERROR || gErrorMsgType == NOT_S_EXP_ERROR )
-		cout << "ERROR (unexpected token) : atom or '(' expected when token at Line "
-				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
-	else if ( gErrorMsgType == RIGHT_ERROR )
-		cout << "ERROR (unexpected token) : ')' expected when token at Line "
-				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
-	else if ( gErrorMsgType == CLOSE_ERROR )
-		cout << "ERROR (no closing quote) : END-OF-LINE encountered at Line "
-				 << gErrorLine << " Column " << gErrorColumn << endl << endl;
-	else if ( gErrorMsgType == EOF_ERROR )
-		cout << "ERROR (no more input) : END-OF-FILE encountered";
-  else if ( gErrorMsgType == PARAMETER_NUM_ERROR )
-    cout << "ERROR (incorrect number of arguments) : " << gErrorMsgName << endl ;
-  else if ( gErrorMsgType == NO_APPLY_ERROR )
-    cout << "ERROR (attempt to apply non-function) : " << gErrorMsgName << endl;
-	else if ( gErrorMsgType == UNBOND_ERROR )
-		cout << "ERROR (unbound symbol) : "<< gErrorMsgName << endl;
-  else if ( gErrorMsgType == PARAMETER_TYPE_ERROR )
-    cout << "ERROR (car with incorrect argument type) : " << gErrorMsgName << endl ;
-  
-} // PrintErrorMessage()
 
 void PrintSExpTree( TokenTree * currentNode, bool isRightNode, int & layer ) {
 static bool lineReturn = false ;
@@ -1228,17 +1213,17 @@ static bool lineReturn = false ;
     lineReturn = true ;
   } // if
   
-  if ( currentNode->rightToken != NULL ) {
-    for( int i = 0; i < layer; i++ ) cout << "  " ;
-    cout << "." << endl ;
-    for( int i = 0; i < layer; i++ ) cout << "  " ;
-    cout << currentNode->rightToken->tokenName << endl ;
-    lineReturn = true ;
-  } // if
-  
   if ( currentNode->leftNode ) PrintSExpTree( currentNode->leftNode, false, layer ) ;
   if ( currentNode->rightNode ) PrintSExpTree( currentNode->rightNode, true, layer ) ;
-  
+
+	if ( currentNode->rightToken != NULL && currentNode->rightToken->tokenTypeNum != NIL ) {
+		for( int i = 0; i < layer; i++ ) cout << "  " ;
+		cout << "." << endl ;
+		for( int i = 0; i < layer; i++ ) cout << "  " ;
+		cout << currentNode->rightToken->tokenName << endl ;
+		lineReturn = true ;
+	} // if
+
   if ( layer > 1  ) {
     lineReturn = true ;
     layer -- ;
@@ -1258,6 +1243,29 @@ void PrintFunctionMsg() {
   } // if
 } // PrintFunctionMsg()
 
+void PrintErrorMessage() {
+	if ( gErrorMsgType == LEFT_ERROR || gErrorMsgType == NOT_S_EXP_ERROR )
+		cout << "ERROR (unexpected token) : atom or '(' expected when token at Line "
+				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
+	else if ( gErrorMsgType == RIGHT_ERROR )
+		cout << "ERROR (unexpected token) : ')' expected when token at Line "
+				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
+	else if ( gErrorMsgType == CLOSE_ERROR )
+		cout << "ERROR (no closing quote) : END-OF-LINE encountered at Line "
+				 << gErrorLine << " Column " << gErrorColumn << endl << endl;
+	else if ( gErrorMsgType == EOF_ERROR )
+		cout << "ERROR (no more input) : END-OF-FILE encountered";
+	else if ( gErrorMsgType == PARAMETER_NUM_ERROR )
+		cout << "ERROR (incorrect number of arguments) : " << gErrorMsgName << endl ;
+	else if ( gErrorMsgType == NO_APPLY_ERROR )
+			cout << "ERROR (attempt to apply non-function) : " << gErrorMsgName << endl;
+	else if ( gErrorMsgType == UNBOND_ERROR )
+		cout << "ERROR (unbound symbol) : "<< gErrorMsgName << endl;
+	else if ( gErrorMsgType == PARAMETER_TYPE_ERROR )
+		cout << "ERROR (car with incorrect argument type) : " << gErrorMsgName << endl ;
+
+} // PrintErrorMessage()
+
 // ------------------Functional Function--------------------- //
 
 void Cons( TokenTree* currentNode ) {
@@ -1268,10 +1276,54 @@ void Cons( TokenTree* currentNode ) {
   resultRootNode->backNode = NULL ;
   InitialNode( resultRootNode ) ;
   
-  if( currentNode->rightNode->leftNode != NULL )
-    resultRootNode->leftNode =
-  
-  
+  if ( currentNode->rightNode->leftNode != NULL ) {
+		if ( gResultList.size() != 0 && gResultList.back().resultBinding != NULL ) {
+			resultRootNode->leftNode = gResultList.back().resultBinding;
+			gResultList.pop_back();
+		} // if : function result
+	} // if : connect left node
+
+	else if ( currentNode->rightNode->leftToken != NULL ) {
+		if ( CheckDefinition(currentNode->rightNode->leftToken->tokenName) ) {
+			PushDefinitionToResultList(currentNode->rightNode->leftToken->tokenName);
+			if ( gResultList.back().resultBinding != NULL ) {
+				resultRootNode->leftNode = gResultList.back().resultBinding;
+			} // if : definition is a node
+
+			else {
+				resultRootNode->leftToken = new Token ;
+				resultRootNode->leftToken->tokenName = gResultList.back().resultStruct.tokenName ;
+			} // if : definition is a token
+			gResultList.pop_back();
+		} // if : check if is in definition
+		else resultRootNode->leftToken = currentNode->rightNode->leftToken ;
+	} // else : only left token
+
+	if ( currentNode->rightNode->rightNode->leftNode != NULL ) {
+		if ( gResultList.size() != 0 && gResultList.back().resultBinding != NULL ) {
+			resultRootNode->rightNode = gResultList.back().resultBinding;
+			gResultList.pop_back();
+		} // if : function result
+	} // if : connect right node
+
+	else if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
+		if ( CheckDefinition(currentNode->rightNode->rightNode->leftToken->tokenName) ) {
+			PushDefinitionToResultList( currentNode->rightNode->rightNode->leftToken->tokenName ) ;
+			if ( gResultList.back().resultBinding != NULL ) {
+				resultRootNode->rightNode = gResultList.back().resultBinding;
+			} // if : definition is a node
+
+			else {
+				resultRootNode->rightToken = new Token ;
+				resultRootNode->rightToken->tokenName = gResultList.back().resultStruct.tokenName ;
+			} // if : definition is a token
+			gResultList.pop_back();
+		} // if : check if is in definition
+		else resultRootNode->rightToken = currentNode->rightNode->rightNode->leftToken ;
+	} // else : only right token
+
+	result.resultBinding = resultRootNode ;
+	gResultList.push_back( result ) ;
   
 }  // Cons()
 
@@ -1364,11 +1416,17 @@ void Quote( TokenTree* currentNode ) {
   TokenTree * notQuoteNode = currentNode ;
   Result result ;
   InitialResult( result ) ;
-  while( notQuoteNode->leftToken != NULL && notQuoteNode->leftToken->tokenName == "quote" ) {
-    notQuoteNode = notQuoteNode->rightNode->leftNode ;
+  if ( notQuoteNode->leftToken != NULL && notQuoteNode->leftToken->tokenName == "quote" ) {
+		if ( notQuoteNode->rightNode->leftNode != NULL ) {
+			notQuoteNode = notQuoteNode->rightNode->leftNode;
+			result.resultBinding = notQuoteNode ;
+		} // if : node
+
+		else if ( notQuoteNode->rightNode->leftToken != NULL ) {
+			result.resultStruct.tokenName = notQuoteNode->rightNode->leftToken->tokenName ;
+		} // else : only token
   } // while : Find not quote node
-  
-  result.resultBinding = notQuoteNode ;
+
   gResultList.push_back( result ) ;
 
 } // Quote
@@ -1588,8 +1646,7 @@ void FindCorrespondFunction( TokenTree* currentNode, string tokenName  ) {
 // ------------------Evaluate Function--------------------- //
 
 
-bool TraversalTreeAndCheck( TokenTree * currentNode ) {
-  static bool quoteScope = false ;
+bool TraversalTreeAndCheck( TokenTree * currentNode, bool quoteScope ) {
 	if ( currentNode != NULL) {
     
     if ( currentNode->leftToken != NULL ){
@@ -1597,14 +1654,14 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
       else if ( IsFunction( currentNode->leftToken->tokenName ) ) quoteScope = false   ;
     } // if
     
-    if( !TraversalTreeAndCheck( currentNode->rightNode ) ) return false;
-    if( !TraversalTreeAndCheck( currentNode->leftNode ) ) return false;
+    if( !TraversalTreeAndCheck( currentNode->rightNode, quoteScope ) ) return false;
+    if( !TraversalTreeAndCheck( currentNode->leftNode, quoteScope ) ) return false;
 		
     if ( currentNode->leftToken != NULL ) {
 			if ( IsFunction( currentNode->leftToken->tokenName ) ) {
         if ( CheckParameter( currentNode, currentNode->leftToken->tokenName )  ){
           FindCorrespondFunction( currentNode, currentNode->leftToken->tokenName ) ;
-					cout << currentNode->leftToken->tokenName << endl;
+					// cout << currentNode->leftToken->tokenName << endl;
         } // if
         
 				else return false;
@@ -1614,6 +1671,14 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
         if ( currentNode->leftToken->tokenTypeNum == SYMBOL ) {
           if ( !CheckDefinition( currentNode->leftToken->tokenName ) )
             SetErrorMsg( UNBOND_ERROR, currentNode->leftToken->tokenName, 0, 0 ) ;
+          else {
+						PushDefinitionToResultList( currentNode->leftToken->tokenName ) ;
+						if ( gResultList.back().resultBinding == NULL )
+							SetErrorMsg( NO_APPLY_ERROR, gResultList.back().resultStruct.tokenName, 0, 0  ) ;
+						else
+							SetErrorMsg( NO_APPLY_ERROR, gResultList.back().resultBinding->leftToken->tokenName, 0, 0  ) ;
+						gResultList.pop_back() ;
+          } // else : if definition but not function
         } // if
               
         else
@@ -1629,6 +1694,7 @@ bool TraversalTreeAndCheck( TokenTree * currentNode ) {
 
 bool EvaluateSExp(){
   gCurrentNode = gTreeRoot ;
+  bool quoteScope = false ;
   if ( gCurrentNode == NULL ) {                   // find definition symbol
     if ( CheckDefinition( gTokens[0].tokenName ) ) {
       PushDefinitionToResultList( gTokens[0].tokenName ) ;
@@ -1637,7 +1703,7 @@ bool EvaluateSExp(){
   	else return false ;
   } // if
   
-  else if ( TraversalTreeAndCheck( gCurrentNode ) ) return true;
+  else if ( TraversalTreeAndCheck( gCurrentNode, quoteScope ) ) return true;
   else return false ;
 } // EvaluateSExp()
 
