@@ -224,7 +224,8 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   if ( tokenName == "cons" ) {
     Result result ;
     InitialResult( result ) ;
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL &&
+         currentNode->rightNode->rightNode->rightToken == NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
       
       if ( currentNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
@@ -300,7 +301,8 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   else if ( tokenName == "define" ) {
     Result result ;
     InitialResult( result ) ;
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL &&
+         currentNode->rightNode->rightNode->rightToken == NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
       
       if ( currentNode->rightNode->rightNode->rightToken != NULL ) {
         SetErrorMsg( NON_LIST_ERROR, "\0", 0, 0) ;
