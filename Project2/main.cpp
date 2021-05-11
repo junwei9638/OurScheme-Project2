@@ -76,6 +76,8 @@ bool gIsEnd = false;
 int gAtomType = 0;
 
 string gErrorMsgName = "\0";
+string gErrorFunctionName = "\0" ;
+TokenTree* gErrorBinding = NULL ;
 int gErrorMsgType = NO_ERROR;
 int gErrorLine = 0;
 int gErrorColumn = 0;
@@ -124,9 +126,11 @@ void ClearInput() {
 	if ( peek == '\n' ) cin.get();
 } // ClearInput()
 
-void SetErrorMsg( int errorType, string errorToken, int line, int column ) {
+void SetErrorMsg( int errorType, string errorToken, string errorFunction, TokenTree* errorBinding, int line, int column ) {
 	gErrorMsgType = errorType;
 	gErrorMsgName = errorToken;
+  gErrorFunctionName = errorFunction ;
+  gErrorBinding = errorBinding ;
 	gErrorLine = line;
 	gErrorColumn = column;
 } // SetErrorMsg()
@@ -139,6 +143,7 @@ void GlobalVariableInitial() {
 	gErrorColumn = 0;
 	gErrorMsgType = NO_ERROR;
 	gErrorMsgName = "\0";
+  gErrorBinding = NULL ;
 	gAtomType = 0;
   gResultList.clear();
 } // GlobalVariableReset()
@@ -198,7 +203,7 @@ bool CheckDefinition( string tokenName ) {
     if ( tokenName == gDefineSymbols[i].symbolName ) return true ;
   } // for
 
-  SetErrorMsg( UNBOND_ERROR, tokenName, 0, 0 ) ;
+  SetErrorMsg( UNBOND_ERROR, tokenName, "\0", NULL, 0, 0 ) ;
   return false;
 }
 
@@ -222,15 +227,18 @@ void PushDefinitionToResultList( string tokenName ) {
 
 bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   if ( tokenName == "cons" ) {
-    Result result ;
-    InitialResult( result ) ;
     if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL &&
-         currentNode->rightNode->rightNode->rightToken == NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
+         currentNode->rightNode->rightNode->rightNode == NULL ) {
+      
+      if ( currentNode->rightNode->rightNode->rightToken != NULL   ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0) ;
+        return false;
+      } // non list check
       
       if ( currentNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
           if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) ) {
-						SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+						SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
             return false ;
           } // if : not in definition
         } // if
@@ -239,25 +247,23 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
       if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
           if ( !CheckDefinition( currentNode->rightNode->rightNode->leftToken->tokenName ) ) {
-						SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->rightNode->leftToken->tokenName, 0, 0 );
+						SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->rightNode->leftToken->tokenName, "\0", NULL, 0, 0 );
 						return false;
 					} // if : not in definition
         } // if
       } // 2nd node type check
       
-      
-      if ( currentNode->rightNode->rightNode->rightToken != NULL ) {
-        SetErrorMsg( NON_LIST_ERROR, "\0", 0, 0) ;
-        result.resultBinding = currentNode ;
-        gResultList.push_back( result ) ;
-        return false;
-      } // non list error
-      
       return true ;
     } // if
 
 		else {
-			SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0);
+      
+      if ( currentNode->rightToken != NULL || currentNode->rightNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+			SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0);
 			return false;
 		} // else : num of parameter error
   } // if
@@ -275,12 +281,17 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
           } // for
           
           if ( !inDefinition ) {
-            SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, 0, 0 ) ;
+            SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
             return false;
           } // if : not in definition -> return false
           
           inDefinition = false ;
-        } //if
+        } //if : left token is not null
+        
+        if ( walkNode->rightToken != NULL ) {
+          SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0) ;
+          return false;
+        } // if : ( list 3 . 4 ) case
       } // if : check symbol in define set
       
     } // while : check right node type
@@ -290,30 +301,37 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   } // if : list
   
   else if ( tokenName == "quote" ) {
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL ) {
+      
+      if ( currentNode->rightNode->rightToken != NULL   ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0) ;
+        return false;
+      } // non list check
+      
       return true ;
+    } // if
     else {
-      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+      if ( currentNode->rightToken != NULL   ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0) ;
+        return false;
+      } // non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
       return false ;
     } // else : num error
   } // if
 
   else if ( tokenName == "define" ) {
-    Result result ;
-    InitialResult( result ) ;
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL &&
-         currentNode->rightNode->rightNode->rightToken == NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL && currentNode->rightNode->rightNode->rightNode == NULL ) {
       
       if ( currentNode->rightNode->rightNode->rightToken != NULL ) {
-        SetErrorMsg( NON_LIST_ERROR, "\0", 0, 0) ;
-        result.resultBinding = currentNode ;
-        gResultList.push_back( result ) ;
-        return false;
-      } // if : non list error
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
       
       if ( currentNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->leftToken->tokenTypeNum != SYMBOL ) {
-          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0) ;
+          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, "define", NULL, 0, 0) ;
           return false;
         } // if : type error
         
@@ -321,48 +339,51 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
       } // if
       
       else {
-        SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->leftToken->tokenName, 0, 0) ; // qoute or dot-piar behind define
+        SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->leftToken->tokenName, "define", NULL, 0, 0) ; // qoute or dot-piar behind define
         return false ;
-      } // if : type error
+      } // else : type error
       
     } // if : parameter num check
     
     else {
-      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+      if ( currentNode->rightToken != NULL || currentNode->rightNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
       return false ;
     } // else : Num error
   } // if : define
 
   else if ( tokenName == "car" ) {
-    Result result ;
-    InitialResult(result) ;
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL  ) {
       
       if ( currentNode->rightNode->rightToken != NULL ) {
-        SetErrorMsg( NON_LIST_ERROR, "\0", 0, 0) ;
-        result.resultBinding = currentNode ;
-        gResultList.push_back( result ) ;
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0) ;
         return false;
       } // if : not list
       
       if ( currentNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
           if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) ) {
-            SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+            SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
             return false ;
           } // if : error-> not in definition
           
           else {
             PushDefinitionToResultList( currentNode->rightNode->leftToken->tokenName ) ;
             if ( gResultList.back().resultBinding == NULL ) {
-              SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList.back().resultStruct.tokenName, 0, 0 ) ;
+              SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList.back().resultStruct.tokenName, "car", NULL, 0, 0 ) ;
               return false;
             } // if  : in definition but not node
+            
+            gResultList.pop_back() ;
           } // else : in definition
         } // if : symbol type
         
         else {
-          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, "car", NULL, 0, 0 ) ;
           return false;
         } // else : not symbol
       } // if : Check symbol in definition
@@ -371,41 +392,44 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
     } // if : num check
     
     else {
-      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+      if ( currentNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
       return false ;
     } // else : num error
   } // if
   
   else if ( tokenName == "cdr" ) {
-    Result result ;
-    InitialResult(result) ;
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL ) {
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL  ) {
       
       if ( currentNode->rightNode->rightToken != NULL ) {
-        SetErrorMsg( NON_LIST_ERROR, "\0", 0, 0) ;
-        result.resultBinding = currentNode ;
-        gResultList.push_back( result ) ;
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0) ;
         return false;
       } // if : not list
       
       if ( currentNode->rightNode->leftToken != NULL ) {
         if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
           if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) ) {
-            SetErrorMsg(UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+            SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
             return false ;
           } // if : error-> not in definition
           
           else {
             PushDefinitionToResultList( currentNode->rightNode->leftToken->tokenName ) ;
             if ( gResultList.back().resultBinding == NULL ) {
-              SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList.back().resultStruct.tokenName, 0, 0 ) ;
+              SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList.back().resultStruct.tokenName, "cdr", NULL, 0, 0 ) ;
               return false;
             } // if  : in definition but not node
+            
+            gResultList.pop_back() ;
           } // else : in definition
         } // if : symbol type
         
         else {
-          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, 0, 0 ) ;
+          SetErrorMsg( PARAMETER_TYPE_ERROR, currentNode->rightNode->leftToken->tokenName, "cdr", NULL, 0, 0 ) ;
           return false;
         } // else : not symbol
       } // if : Check symbol in definition
@@ -413,17 +437,42 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
       return true;
     } // if : num check
     
-    else {
-      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+    else{
+      if ( currentNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
       return false ;
     } // else : num error
     
   } // if
 
   else if ( tokenName == "atom?" ) {
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL ) {
+      
+      if ( currentNode->rightNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      if ( )
+      
+      
       return true ;
-    else return false ;
+    } // if
+    
+    
+    else {
+      if ( currentNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
+      return false ;
+    } // else
   } // if
 
   else if ( tokenName == "pair?" ) {
@@ -670,9 +719,9 @@ string StringProcess() {
 
 	if ( closeQuote == false ) {
 		if ( peek == EOF)
-			SetErrorMsg(EOF_ERROR, "\"", 0, 0);
+			SetErrorMsg(EOF_ERROR, "\"", "\0", NULL, 0, 0);
 		else if ( peek == '\n' )
-			SetErrorMsg(CLOSE_ERROR, "\"", gLine, gColumn + 1);
+			SetErrorMsg(CLOSE_ERROR, "\"", "\0", NULL, gLine, gColumn + 1);
 		return "\0";
 	} // if                                        // no closing quote
 
@@ -802,7 +851,7 @@ bool GetToken() {
 	token.tokenLine = 0;
 
 	if ( peek == EOF) {
-		SetErrorMsg(EOF_ERROR, " ", 0, 0);
+		SetErrorMsg(EOF_ERROR, " ", "\0", NULL, 0, 0);
 		gIsEnd = true;
 		return false;
 	} // if
@@ -857,7 +906,7 @@ bool GetToken() {
 			token.tokenName = GetAtom();
 			int notSymbol = (int) token.tokenName.find('"');
 			if ( notSymbol != token.tokenName.npos ) {
-				SetErrorMsg(CLOSE_ERROR, "\"", 0, 0);
+				SetErrorMsg(CLOSE_ERROR, "\"", "\0", NULL, 0, 0);
 				return false;
 			} // if
 		} // else
@@ -1072,7 +1121,7 @@ bool SyntaxChecker() {
 					else {
 						if ( gErrorMsgType == NOT_S_EXP_ERROR ) {
 							SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-													gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                          "\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
 						} // if
 
 						return false;
@@ -1089,7 +1138,7 @@ bool SyntaxChecker() {
 			} // if
 			else {
 				SetErrorMsg(RIGHT_ERROR, gTokens.back().tokenName,
-										gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                    "\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
 				return false;
 			} // else
 		} // if
@@ -1097,7 +1146,7 @@ bool SyntaxChecker() {
 		else {
 			if ( gErrorMsgType == NOT_S_EXP_ERROR ) {
 				SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-										gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                    "\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
 			} // if
 
 			return false;
@@ -1127,7 +1176,7 @@ bool SyntaxChecker() {
 			} // if :push right paren
 			else {
 				SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-										gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                    "\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
 				return false;
 			} // else
 		} // if
@@ -1144,7 +1193,7 @@ bool SyntaxChecker() {
 			if ( SyntaxChecker()) return true;
 			else {
 				SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-										gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                    "\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
 				return false;
 			} // else
 		} // if
@@ -1153,19 +1202,12 @@ bool SyntaxChecker() {
 	} // if
 
 	SetErrorMsg(NOT_S_EXP_ERROR, gTokens.back().tokenName,
-							gTokens.back().tokenLine, gTokens.back().tokenColumn);
+              "\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
 	return false;
 
 } // SyntaxChecker()
 
 // ------------------Print Function--------------------- //
-void PrintAtom() {
-	if ( gTokens[0].tokenTypeNum == FLOAT ) {
-		cout << fixed << setprecision(3)
-				 << round(atof(gTokens[0].tokenName.c_str()) * 1000) / 1000 << endl;
-	} // if
-	else cout << gTokens[0].tokenName << endl;
-} // PrintAtom()
 
 
 void PrintSExpTree( TokenTree * currentNode, bool isRightNode, int & layer ) {
@@ -1207,20 +1249,32 @@ static bool lineReturn = false ;
 void PrintFunctionMsg() {
   int layer = 0;
   if( gResultList.size() > 0 ) {
-    if ( gResultList[0].resultStruct.tokenName != "\0" ) cout << gResultList[0].resultStruct.tokenName << endl ;
+    if ( gResultList.back().resultStruct.tokenName != "\0" ){
+      if ( gResultList.back().resultStruct.tokenTypeNum == FLOAT ) {
+        cout << fixed << setprecision(3)
+             << round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 << endl;
+      } // if
+      else cout << gResultList.back().resultStruct.tokenName << endl;
+    } // if : Print Msg or atom
   
-    else if ( gResultList[0].resultBinding != NULL ) {
-      PrintSExpTree( gResultList[0].resultBinding, false, layer ) ;
+    else if ( gResultList.back().resultBinding != NULL ) {
+      PrintSExpTree( gResultList.back().resultBinding, false, layer ) ;
       for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
     } // if
   } // if
 
   else {
-		PrintAtom() ;
+    if ( gTokens[0].tokenTypeNum == FLOAT ) {
+      cout << fixed << setprecision(3)
+           << round( atof( gTokens[0].tokenName.c_str() ) * 1000 ) / 1000 << endl;
+    } // if : float print
+    else cout << gTokens[0].tokenName << endl;
   } // else : only one token and not symbol
 } // PrintFunctionMsg()
 
+
 void PrintErrorMessage() {
+  int layer = 0 ;
 	if ( gErrorMsgType == LEFT_ERROR || gErrorMsgType == NOT_S_EXP_ERROR )
 		cout << "ERROR (unexpected token) : atom or '(' expected when token at Line "
 				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
@@ -1239,10 +1293,11 @@ void PrintErrorMessage() {
 	else if ( gErrorMsgType == UNBOND_ERROR )
 		cout << "ERROR (unbound symbol) : "<< gErrorMsgName << endl;
 	else if ( gErrorMsgType == PARAMETER_TYPE_ERROR )
-		cout << "ERROR (car with incorrect argument type) : " << gErrorMsgName << endl ;
+		cout << "ERROR (" << gErrorFunctionName << " with incorrect argument type) : " << gErrorMsgName << endl ;
   else if ( gErrorMsgType == NON_LIST_ERROR ) {
     cout << "ERROR (non-list) : "  ;
-    PrintFunctionMsg() ;
+    PrintSExpTree( gErrorBinding, false, layer ) ;
+    for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
   } // if
 
 } // PrintErrorMessage()
@@ -1262,6 +1317,13 @@ void Cons( TokenTree* currentNode ) {
 			resultRootNode->leftNode = gResultList.back().resultBinding;
 			gResultList.pop_back();
 		} // if : function result
+    
+    else if ( gResultList.back().resultStruct.tokenName != "\0" ){
+      resultRootNode->leftToken = new Token  ;
+      resultRootNode->leftToken->tokenName = gResultList.back().resultStruct.tokenName ;
+      resultRootNode->leftToken->tokenTypeNum = gResultList.back().resultStruct.tokenTypeNum ;
+      gResultList.pop_back();
+    } // function result is a token
 	} // if : connect left node
 
 	else if ( currentNode->rightNode->leftToken != NULL ) {
@@ -1286,6 +1348,13 @@ void Cons( TokenTree* currentNode ) {
 			resultRootNode->rightNode = gResultList.back().resultBinding;
 			gResultList.pop_back();
 		} // if : function result
+    
+    else if ( gResultList.back().resultStruct.tokenName != "\0" ){
+      resultRootNode->rightToken = new Token  ;
+      resultRootNode->rightToken->tokenName = gResultList.back().resultStruct.tokenName ;
+      resultRootNode->rightToken->tokenTypeNum = gResultList.back().resultStruct.tokenTypeNum ;
+      gResultList.pop_back();
+    } // function result is a token
 	} // if : connect right node
 
 	else if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
@@ -1401,13 +1470,24 @@ void Quote( TokenTree* currentNode ) {
   TokenTree * notQuoteNode = currentNode ;
   Result result ;
   InitialResult( result ) ;
+  //if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) return ;
+  
   if ( notQuoteNode->leftToken != NULL && notQuoteNode->leftToken->tokenName == "quote" ) {
-		if ( notQuoteNode->rightNode->leftNode != NULL ) {
-			notQuoteNode = notQuoteNode->rightNode->leftNode;
+    if ( notQuoteNode->rightNode->leftNode != NULL ) {
+      
+      if ( notQuoteNode->rightNode->leftNode->leftToken != NULL ) {
+        if ( IsFunction( notQuoteNode->rightNode->leftNode->leftToken->tokenName ) ) return ;
+      } // if : if is Function -> result list has result -> return
+			
+      notQuoteNode = notQuoteNode->rightNode->leftNode;
 			result.resultBinding = notQuoteNode ;
 		} // if : node
 
 		else if ( notQuoteNode->rightNode->leftToken != NULL ) {
+      if ( CheckDefinition( notQuoteNode->rightNode->leftToken->tokenName ) ) {
+        PushDefinitionToResultList( notQuoteNode->rightNode->leftToken->tokenName ) ;
+        return;
+      } // if : chech if same symbol
 			result.resultStruct.tokenName = notQuoteNode->rightNode->leftToken->tokenName ;
       result.resultStruct.tokenTypeNum = notQuoteNode->rightNode->leftToken->tokenTypeNum;
 		} // else : only token
@@ -1458,6 +1538,7 @@ void Car( TokenTree* currentNode ) {
     if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
       PushDefinitionToResultList( currentNode->rightNode->leftToken->tokenName ) ;
       walkNode = gResultList.back().resultBinding ;
+      gResultList.pop_back() ;
       if ( walkNode == NULL ) {
         return ;
       } // if : definition is a token
@@ -1466,11 +1547,9 @@ void Car( TokenTree* currentNode ) {
         if ( walkNode->leftToken != NULL ) {
           result.resultStruct.tokenName = walkNode->leftToken->tokenName ;
           result.resultStruct.tokenTypeNum = walkNode->leftToken->tokenTypeNum ;
-        } // if
+        } // if : left side token
         else if ( walkNode->leftNode != NULL )
           result.resultBinding = walkNode->leftNode ;
-        
-        gResultList.pop_back() ;
       } // if : right side has something -> get left side
       
       else if ( walkNode->rightToken == NULL && walkNode->rightNode == NULL ) {
@@ -1480,8 +1559,6 @@ void Car( TokenTree* currentNode ) {
           result.resultStruct.tokenName = walkNode->leftToken->tokenName ;
           result.resultStruct.tokenTypeNum = walkNode->leftToken->tokenTypeNum ;
         } // if : find left token
-        
-        gResultList.pop_back() ;
       } // if : right side has nothing -> get first token of left side
     } // if : one token but symbol -> find definition
   } // if : only one token
@@ -1489,15 +1566,14 @@ void Car( TokenTree* currentNode ) {
   else if ( currentNode->rightNode->leftNode != NULL ) {
     if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {
       walkNode = gResultList.back().resultBinding ;
+      gResultList.pop_back() ;
       if ( walkNode->rightToken != NULL || walkNode->rightNode != NULL ) {
         if ( walkNode->leftToken != NULL ) {
           result.resultStruct.tokenName = walkNode->leftToken->tokenName ;
           result.resultStruct.tokenTypeNum = walkNode->leftToken->tokenTypeNum ;
-        } // if
+        } // if : get left side tioken
         else if ( walkNode->leftNode != NULL )
           result.resultBinding = walkNode->leftNode ;
-        
-        gResultList.pop_back() ;
       } // if : right side has something -> get left side
       
       else if ( walkNode->rightToken == NULL && walkNode->rightNode == NULL ) {
@@ -1507,8 +1583,6 @@ void Car( TokenTree* currentNode ) {
           result.resultStruct.tokenName = walkNode->leftToken->tokenName ;
           result.resultStruct.tokenTypeNum = walkNode->leftToken->tokenTypeNum ;
         } // if : find left token
-        
-        gResultList.pop_back() ;
       } // if : right side has nothing -> get first token of left side
     } // if : check gResultList's binding
     
@@ -1531,39 +1605,45 @@ void Cdr( TokenTree* currentNode ) {
     if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
       PushDefinitionToResultList( currentNode->rightNode->leftToken->tokenName ) ;
       walkNode = gResultList.back().resultBinding ;
+      gResultList.pop_back() ;
       if ( walkNode == NULL ) {
         return ;
       } // if : definition is a token
       
-      
-    } // if : one token but symbol -> find definition
-    else {
-      result.resultStruct.tokenName = currentNode->rightNode->leftToken->tokenName ;
-      result.resultStruct.tokenTypeNum = currentNode->rightNode->leftToken->tokenTypeNum ;
-    } // else
-  } // if : only one token
+      else if ( walkNode->rightToken != NULL || walkNode->rightNode != NULL ) {
+        if ( walkNode->rightToken != NULL ) {
+          result.resultStruct.tokenName = walkNode->rightToken->tokenName ;
+          result.resultStruct.tokenTypeNum = walkNode->rightToken->tokenTypeNum ;
+        } // if : get right token in left side
+        else if ( walkNode->rightNode != NULL )
+          result.resultBinding = walkNode->rightNode ;
+      } // if : right side has something -> get right side
+    } // if : right token is a symbol -> check definition
+    
+  } // if : check left token
   
   else if ( currentNode->rightNode->leftNode != NULL ) {
-    if ( gResultList.size() > 0 && gResultList.back().resultBinding != NULL ) {
-      walkNode = gResultList.back().resultBinding ;
-      if ( walkNode->rightNode == NULL && walkNode->rightNode == NULL ) {
-        
-      } // if
-    } // if : check gResultList's binding
-    
-    else {
+    walkNode = gResultList.back().resultBinding ;
+    gResultList.pop_back() ;
+    if ( walkNode == NULL ) {
       return ;
-    } // else : function result is a token -> return the token
+    } // if : resultList is a token
     
-  } // if : leftnode -> funtion result in resultList
-  
+    else if ( walkNode->rightToken != NULL || walkNode->rightNode != NULL ) {
+      if ( walkNode->rightToken != NULL ) {
+        result.resultStruct.tokenName = walkNode->rightToken->tokenName ;
+        result.resultStruct.tokenTypeNum = walkNode->rightToken->tokenTypeNum ;
+      } // if : get right token in left side
+      else if ( walkNode->rightNode != NULL )
+        result.resultBinding = walkNode->rightNode ;
+    } // if : right side has something -> get right side
+  } // if : check right node if left side
   
   gResultList.push_back( result ) ;
-  
 } // Cdr()
 
-bool Is_Atom( TokenTree* currentNode ) {
-  return true ;
+void Is_Atom( TokenTree* currentNode ) {
+  
 } // Is_Atom
 
 bool Is_Pair( TokenTree* currentNode ) {
@@ -1761,19 +1841,19 @@ bool TraversalTreeAndCheck( TokenTree * currentNode, bool quoteScope ) {
       else if ( currentNode->NeedToBePrimitive == true && !quoteScope ) {
         if ( currentNode->leftToken->tokenTypeNum == SYMBOL ) {
           if ( !CheckDefinition( currentNode->leftToken->tokenName ) )
-            SetErrorMsg( UNBOND_ERROR, currentNode->leftToken->tokenName, 0, 0 ) ;
+            SetErrorMsg( UNBOND_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
           else {
 						PushDefinitionToResultList( currentNode->leftToken->tokenName ) ;
 						if ( gResultList.back().resultBinding == NULL )
-							SetErrorMsg( NO_APPLY_ERROR, gResultList.back().resultStruct.tokenName, 0, 0  ) ;
+							SetErrorMsg( NO_APPLY_ERROR, gResultList.back().resultStruct.tokenName, "\0", NULL, 0, 0  ) ;
 						else
-							SetErrorMsg( NO_APPLY_ERROR, gResultList.back().resultBinding->leftToken->tokenName, 0, 0  ) ;
+							SetErrorMsg( NO_APPLY_ERROR, gResultList.back().resultBinding->leftToken->tokenName, "\0", NULL, 0, 0  ) ;
 						gResultList.pop_back() ;
           } // else : if definition but not function
         } // if
               
         else
-          SetErrorMsg( NO_APPLY_ERROR, currentNode->leftToken->tokenName, 0, 0) ;
+          SetErrorMsg( NO_APPLY_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
         return false;
       } // if : not function but has to be
 		} // if
