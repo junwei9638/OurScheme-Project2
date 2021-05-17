@@ -14,9 +14,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1888"
-            endingLineNumber = "1888"
-            landmarkName = "Define(currentNode)"
+            startingLineNumber = "2103"
+            endingLineNumber = "2103"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -30,8 +30,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2973"
-            endingLineNumber = "2973"
+            startingLineNumber = "3332"
+            endingLineNumber = "3332"
             landmarkName = "main()"
             landmarkType = "9">
          </BreakpointContent>
@@ -46,8 +46,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "655"
-            endingLineNumber = "655"
+            startingLineNumber = "659"
+            endingLineNumber = "659"
             landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
@@ -78,8 +78,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "903"
-            endingLineNumber = "903"
+            startingLineNumber = "907"
+            endingLineNumber = "907"
             landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
@@ -94,9 +94,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2659"
-            endingLineNumber = "2659"
-            landmarkName = "Plus(currentNode)"
+            startingLineNumber = "2874"
+            endingLineNumber = "2874"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -110,9 +110,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2671"
-            endingLineNumber = "2671"
-            landmarkName = "Plus(currentNode)"
+            startingLineNumber = "2886"
+            endingLineNumber = "2886"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -126,8 +126,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "484"
-            endingLineNumber = "484"
+            startingLineNumber = "486"
+            endingLineNumber = "486"
             landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
@@ -136,15 +136,15 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "FEDB0434-2F04-4024-BAD4-B395DDAA8D56"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1405"
-            endingLineNumber = "1405"
-            landmarkName = "BuildTree()"
+            startingLineNumber = "1597"
+            endingLineNumber = "1597"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -158,9 +158,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1435"
-            endingLineNumber = "1435"
-            landmarkName = "BuildTree()"
+            startingLineNumber = "1630"
+            endingLineNumber = "1630"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -174,9 +174,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1380"
-            endingLineNumber = "1380"
-            landmarkName = "BuildTree()"
+            startingLineNumber = "1571"
+            endingLineNumber = "1571"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -190,9 +190,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1509"
-            endingLineNumber = "1509"
-            landmarkName = "SyntaxChecker()"
+            startingLineNumber = "1706"
+            endingLineNumber = "1706"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -206,8 +206,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "904"
-            endingLineNumber = "904"
+            startingLineNumber = "908"
+            endingLineNumber = "908"
             landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
@@ -222,9 +222,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2683"
-            endingLineNumber = "2683"
-            landmarkName = "Plus(currentNode)"
+            startingLineNumber = "2905"
+            endingLineNumber = "2905"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
@@ -238,8 +238,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2709"
-            endingLineNumber = "2709"
+            startingLineNumber = "2931"
+            endingLineNumber = "2931"
             landmarkName = "Minus(currentNode)"
             landmarkType = "9">
          </BreakpointContent>
@@ -254,9 +254,137 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2708"
-            endingLineNumber = "2708"
+            startingLineNumber = "2930"
+            endingLineNumber = "2930"
             landmarkName = "Minus(currentNode)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "81A6C268-6D1B-44C5-AA95-BE74B3BF3215"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3299"
+            endingLineNumber = "3299"
+            landmarkName = "EvaluateSExp()"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "90BE4F05-F76D-4A94-9733-10BA81EC8A6A"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1603"
+            endingLineNumber = "1603"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "1D5D4F2B-DE74-43C6-BD28-6D12D6BAC2EF"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1636"
+            endingLineNumber = "1636"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "081573DC-5192-431F-8464-B4877DB44453"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3100"
+            endingLineNumber = "3100"
+            landmarkName = "Mult(currentNode)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "0860C78C-9AD5-4C14-A5EE-40B795EFC148"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "259"
+            endingLineNumber = "259"
+            landmarkName = "CheckParameterOfMathSymbol(currentNode)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "6C71E2E5-1D07-4E10-9F5D-7B687B67FA96"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "3013"
+            endingLineNumber = "3013"
+            landmarkName = "Div(currentNode)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "79465F37-01C1-4315-A00C-4F18492E0C92"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "922"
+            endingLineNumber = "922"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
+            landmarkType = "9">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "5078DD31-79AB-4791-96B4-6D0B97DD6812"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1054"
+            endingLineNumber = "1054"
+            landmarkName = "CheckParameter(currentNode, tokenName)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>

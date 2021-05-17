@@ -257,7 +257,7 @@ bool CheckParameterOfMathSymbol( TokenTree * currentNode ) {
       
       if ( walkNode->leftNode != NULL ) {
         if ( gResultList[functionResultIndex].resultBinding != NULL ) {
-          SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", gResultList.back().resultBinding, 0, 0 ) ;
+          SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", gResultList[functionResultIndex].resultBinding, 0, 0 ) ;
           return false;
         } // if : function result is a node
         
@@ -280,13 +280,15 @@ bool CheckParameterOfMathSymbol( TokenTree * currentNode ) {
           else {
             PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
             if ( gResultList.back().resultBinding != NULL ) {
-              SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+              SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", gResultList.back().resultBinding, 0, 0 ) ;
+              gResultList.pop_back() ;
               return false;
             } // if : function result is a node
             
             else if ( gResultList.back().resultStruct.tokenTypeNum != INT &&
                       gResultList.back().resultStruct.tokenTypeNum != FLOAT ) {
               SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+              gResultList.pop_back() ;
               return false;
             } // if : function result is a token -> int or float
             
@@ -500,6 +502,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
             PushDefinitionToResultList( currentNode->rightNode->leftToken->tokenName ) ;
             if ( gResultList.back().resultBinding == NULL ) {
               SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList.back().resultStruct.tokenName, "car", NULL, 0, 0 ) ;
+              gResultList.pop_back() ;
               return false;
             } // if  : in definition but not node
             
@@ -553,6 +556,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
             PushDefinitionToResultList( currentNode->rightNode->leftToken->tokenName ) ;
             if ( gResultList.back().resultBinding == NULL ) {
               SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList.back().resultStruct.tokenName, "cdr", NULL, 0, 0 ) ;
+              gResultList.pop_back() ;
               return false;
             } // if  : in definition but not node
             
@@ -916,15 +920,198 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   } // if : *
 
   else if ( tokenName == "/" ) {
-    if ( CheckParameterOfMathSymbol( currentNode ) ) return true;
-    else return false ;
+    int functionResultIndex = (int) gResultList.size() - 1 ;
+    float zero = 0.000 ;
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL ) {
+      TokenTree* walkNode = currentNode ;
+      
+      walkNode = walkNode->rightNode ;
+      if( walkNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      if ( walkNode->leftNode != NULL ) {
+        if ( gResultList[functionResultIndex].resultBinding != NULL ) {
+          SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", gResultList[functionResultIndex].resultBinding, 0, 0 ) ;
+          return false;
+        } // if : function result is a node
+        
+        else if ( gResultList[functionResultIndex].resultStruct.tokenTypeNum != INT &&
+                  gResultList[functionResultIndex].resultStruct.tokenTypeNum != FLOAT ) {
+          SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList[functionResultIndex].resultStruct.tokenName, "+", NULL, 0, 0 ) ;
+          return false;
+        } // if : function result is a token -> int or float
+        
+        functionResultIndex -- ;
+      } // if : leftNode is a function result
+      
+      if ( walkNode->leftToken != NULL ){
+        if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+          if ( !CheckDefinition( walkNode->leftToken->tokenName ) ) {
+            SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
+            return false ;
+          } // if : not in definition
+             
+          else {
+            PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+            if ( gResultList.back().resultBinding != NULL ) {
+              SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+              gResultList.pop_back() ;
+              return false;
+            } // if : function result is a node
+            
+            else if ( gResultList.back().resultStruct.tokenTypeNum != INT &&
+                      gResultList.back().resultStruct.tokenTypeNum != FLOAT ) {
+              SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+              gResultList.pop_back() ;
+              return false;
+            } // if : function result is a token -> int or float
+            
+            gResultList.pop_back() ;
+          } // else : check definition is a node or token
+        } // if : Check token in definition
+        
+        else {
+          if ( walkNode->leftToken->tokenTypeNum != INT && walkNode->leftToken->tokenTypeNum != FLOAT ) {
+            SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+            return false;
+          } // if : function result is a token -> int or float
+        } // else : left token -> int or float
+        
+      } // if : leftside is a Token
+      
+      while( walkNode->rightNode != NULL ) {
+        walkNode = walkNode->rightNode ;
+        if( walkNode->rightToken != NULL ) {
+          SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+          return false ;
+        } // if : non list check
+        
+        if ( walkNode->leftNode != NULL ) {
+          if ( gResultList[functionResultIndex].resultBinding != NULL ) {
+            SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", gResultList[functionResultIndex].resultBinding, 0, 0 ) ;
+            return false;
+          } // if : function result is a node
+          
+          else if ( gResultList[functionResultIndex].resultStruct.tokenTypeNum != INT &&
+                    gResultList[functionResultIndex].resultStruct.tokenTypeNum != FLOAT ) {
+            SetErrorMsg( PARAMETER_TYPE_ERROR, gResultList[functionResultIndex].resultStruct.tokenName, "+", NULL, 0, 0 ) ;
+            return false;
+          } // if : function result is a token -> int or float
+          
+          else if ( gResultList[functionResultIndex].resultStruct.tokenTypeNum == INT ||
+                    gResultList[functionResultIndex].resultStruct.tokenTypeNum == FLOAT ) {
+            if ( ( round( atof( gResultList[functionResultIndex].resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ) == zero )
+              SetErrorMsg( DIVISION_BY_ZERO_ERROR, "\0", "\0", NULL, 0, 0 ) ;
+            return false;
+          } // if : function result is a token -> int or float
+          
+          functionResultIndex -- ;
+        } // if : leftNode is a function result
+        
+        if ( walkNode->leftToken != NULL ){
+          if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+            if ( !CheckDefinition( walkNode->leftToken->tokenName ) ) {
+              SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
+              return false ;
+            } // if : not in definition
+               
+            else {
+              PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+              if ( gResultList.back().resultBinding != NULL ) {
+                SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", gResultList.back().resultBinding, 0, 0 ) ;
+                gResultList.pop_back() ;
+                return false;
+              } // if : function result is a node
+              
+              else if ( gResultList.back().resultStruct.tokenTypeNum != INT &&
+                        gResultList.back().resultStruct.tokenTypeNum != FLOAT ) {
+                SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+                gResultList.pop_back() ;
+                return false;
+              } // if : function result is a token -> int or float
+              
+              else if ( gResultList.back().resultStruct.tokenTypeNum == INT ||
+                        gResultList.back().resultStruct.tokenTypeNum == FLOAT ) {
+                if ( ( round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ) == zero ) {
+                  SetErrorMsg( DIVISION_BY_ZERO_ERROR, "\0", "\0", NULL, 0, 0 ) ;
+                  gResultList.pop_back() ;
+                  return false;
+                } // if : division zero error
+              } // if : function result is a token -> int or float
+              
+              gResultList.pop_back() ;
+            } // else : check definition is a node or token
+          } // if : Check token in definition
+          
+          else {
+            if ( walkNode->leftToken->tokenTypeNum != INT && walkNode->leftToken->tokenTypeNum != FLOAT ) {
+              SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "+", NULL, 0, 0 ) ;
+              return false;
+            } // if : function result is a token -> int or float
+            
+            else if ( walkNode->leftToken->tokenTypeNum == INT || walkNode->leftToken->tokenTypeNum == FLOAT ) {
+              if ( ( round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ) == zero ) {
+                SetErrorMsg( DIVISION_BY_ZERO_ERROR, "\0", "\0", NULL, 0, 0 ) ;
+                return false;
+              } // if : division is zero
+            } // if : function result is a token -> int or float
+          } // else : left token -> int or float
+          
+        } // if : leftside is a Token
+        
+      } // while : check every right node
+      
+      return true;
+    } // if : num check
+    
+    else {
+      if ( currentNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      if ( currentNode->rightNode != NULL && currentNode->rightNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
+      return false ;
+    } // else : num check false
   } // if : \
 
   else if ( tokenName == "not" ) {
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL )
+    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode == NULL ) {
+      if ( currentNode->rightNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+
+      
+      if ( currentNode->rightNode->leftToken != NULL ) {
+        if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+          if ( !CheckDefinition( currentNode->rightNode->leftToken->tokenName ) ) {
+            SetErrorMsg( UNBOND_ERROR, currentNode->rightNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
+            return false ;
+          } // if : not in definition
+        } // if : defined symbol
+      } // if : second parameter is a token
+      
       return true ;
-    else return false ;
-  } // if
+      
+    } // if : check num
+    else {
+      if ( currentNode->rightToken != NULL ) {
+        SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+        return false ;
+      } // if : non list check
+      
+      SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
+      return false ;
+    } // else : num error
+  } // if : not
 
   else if ( tokenName == "and" ) {
     if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
@@ -1312,17 +1499,19 @@ void InsertAtomToTree() {
 			} // if
 
 			else if ( gCurrentNode->leftNode != NULL ) {                        // left node !null
-				while ( gCurrentNode->rightNode != NULL )                         // find right node null
-					gCurrentNode = gCurrentNode->backNode;
+        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
         
         if ( gCurrentNode->backNode != NULL ) {
           if ( gCurrentNode->backNode->leftToken != NULL ) {
-            if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
-              gCurrentNode = gCurrentNode->backNode;
-            while ( gCurrentNode->rightNode != NULL )                         // find right node null
+            if ( gCurrentNode->backNode->NeedToBePrimitive == true &&
+                 gCurrentNode->backNode->backNode != NULL )
               gCurrentNode = gCurrentNode->backNode;
           } // if
         } // if
+        
+        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
         
 
 				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
@@ -1345,17 +1534,19 @@ void InsertAtomToTree() {
 		} // if
 
 		else if ( gCurrentNode->leftToken != NULL ) {                       // left token !null
-			while ( gCurrentNode->rightNode != NULL )                        // find right node null
-				gCurrentNode = gCurrentNode->backNode;
+      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
       
       if ( gCurrentNode->backNode != NULL ) {
         if ( gCurrentNode->backNode->leftToken != NULL ) {
-          if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE )
-            gCurrentNode = gCurrentNode->backNode;
-          while ( gCurrentNode->rightNode != NULL )                         // find right node null
+          if ( gCurrentNode->backNode->NeedToBePrimitive == true &&
+               gCurrentNode->backNode->backNode != NULL )
             gCurrentNode = gCurrentNode->backNode;
         } // if
       } // if
+      
+      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
 
 			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
 				gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
@@ -1397,17 +1588,20 @@ void BuildTree() {
 			} // if
 
 			else if ( gCurrentNode->leftNode != NULL ) {          // left node !null
-				while ( gCurrentNode->rightNode != NULL )           // find right node null-> create node
-					gCurrentNode = gCurrentNode->backNode;
+        
+        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
         
         if ( gCurrentNode->backNode != NULL ) {
           if ( gCurrentNode->backNode->leftToken != NULL ) {
-            if ( gCurrentNode->backNode->NeedToBePrimitive == true )
-              gCurrentNode = gCurrentNode->backNode;
-            while ( gCurrentNode->rightNode != NULL )                         // find right node null
+            if ( gCurrentNode->backNode->NeedToBePrimitive == true &&
+                 gCurrentNode->backNode->backNode != NULL )
               gCurrentNode = gCurrentNode->backNode;
           } // if
         } // if
+        
+        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
 
 				gCurrentNode->rightNode = new TokenTree;
 				gCurrentNode->rightNode->backNode = gCurrentNode;
@@ -1427,17 +1621,20 @@ void BuildTree() {
 		} // if
 
 		else if ( gCurrentNode->leftToken != NULL ) {         // left token !null
-			while ( gCurrentNode->rightNode != NULL )           // find right node null-> create node
-				gCurrentNode = gCurrentNode->backNode;
+      
+      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
       
       if ( gCurrentNode->backNode != NULL ) {
         if ( gCurrentNode->backNode->leftToken != NULL ) {
-          if ( gCurrentNode->backNode->NeedToBePrimitive == true )
-            gCurrentNode = gCurrentNode->backNode;
-          while ( gCurrentNode->rightNode != NULL )        // find right node null and above function
+          if ( gCurrentNode->backNode->NeedToBePrimitive == true &&
+               gCurrentNode->backNode->backNode != NULL )
             gCurrentNode = gCurrentNode->backNode;
         } // if
       } // if
+      
+      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
 
 			gCurrentNode->rightNode = new TokenTree;                       // and create right node
 			gCurrentNode->rightNode->backNode = gCurrentNode;
@@ -1586,7 +1783,7 @@ bool SyntaxChecker() {
 
 void PrintSExpTree( TokenTree * currentNode, bool isRightNode, int & layer ) {
 static bool lineReturn = false ;
-  if ( !isRightNode && currentNode->leftToken->tokenTypeNum != QUOTE ) {
+  if ( !isRightNode && currentNode->leftToken && currentNode->leftToken->tokenTypeNum != QUOTE ) {
     cout << "( " ;
     lineReturn = false ;
     layer ++ ;
@@ -1658,16 +1855,21 @@ void PrintErrorMessage() {
 	if ( gErrorMsgType == LEFT_ERROR || gErrorMsgType == NOT_S_EXP_ERROR )
 		cout << "ERROR (unexpected token) : atom or '(' expected when token at Line "
 				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
-	else if ( gErrorMsgType == RIGHT_ERROR )
+	
+  else if ( gErrorMsgType == RIGHT_ERROR )
 		cout << "ERROR (unexpected token) : ')' expected when token at Line "
 				 << gErrorLine << " Column " << gErrorColumn << " is >>" << gErrorMsgName << "<<" << endl << endl;
-	else if ( gErrorMsgType == CLOSE_ERROR )
+	
+  else if ( gErrorMsgType == CLOSE_ERROR )
 		cout << "ERROR (no closing quote) : END-OF-LINE encountered at Line "
 				 << gErrorLine << " Column " << gErrorColumn << endl << endl;
-	else if ( gErrorMsgType == EOF_ERROR )
+	
+  else if ( gErrorMsgType == EOF_ERROR )
 		cout << "ERROR (no more input) : END-OF-FILE encountered";
-	else if ( gErrorMsgType == PARAMETER_NUM_ERROR )
+	
+  else if ( gErrorMsgType == PARAMETER_NUM_ERROR )
 		cout << "ERROR (incorrect number of arguments) : " << gErrorMsgName << endl ;
+  
   else if ( gErrorMsgType == NO_APPLY_ERROR ) {
     if ( gErrorBinding == NULL )
       cout << "ERROR (attempt to apply non-function) : " << gErrorMsgName << endl;
@@ -1677,10 +1879,20 @@ void PrintErrorMessage() {
       for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
     } // else : not null error
   } // if
-	else if ( gErrorMsgType == UNBOND_ERROR )
+	
+  else if ( gErrorMsgType == UNBOND_ERROR )
 		cout << "ERROR (unbound symbol) : "<< gErrorMsgName << endl;
-	else if ( gErrorMsgType == PARAMETER_TYPE_ERROR )
-		cout << "ERROR (" << gErrorFunctionName << " with incorrect argument type) : " << gErrorMsgName << endl ;
+  
+  else if ( gErrorMsgType == PARAMETER_TYPE_ERROR ) {
+    if ( gErrorBinding == NULL )
+      cout << "ERROR (" << gErrorFunctionName << " with incorrect argument type) : " << gErrorMsgName << endl ;
+    else {
+      cout << "ERROR (" << gErrorFunctionName << " with incorrect argument type) : " ;
+      PrintSExpTree( gErrorBinding, false, layer ) ;
+      for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
+    } // else : not null error
+  } // if : parameter type
+  
   else if ( gErrorMsgType == NON_LIST_ERROR ) {
     cout << "ERROR (non-list) : "  ;
     PrintSExpTree( gErrorBinding, false, layer ) ;
@@ -1692,6 +1904,9 @@ void PrintErrorMessage() {
     PrintSExpTree( gErrorBinding, false, layer ) ;
     for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
   } // if
+  
+  else if ( gErrorMsgType == DIVISION_BY_ZERO_ERROR )
+    cout << "ERROR (division by zero) : /" << endl ;
 } // PrintErrorMessage()
 
 // ------------------Functional Function--------------------- //
@@ -2653,7 +2868,7 @@ void Plus( TokenTree* currentNode ) {
   float inputNum = 0.0 ;
   float resultFloat  = 0.0 ;
   bool isFloat = false;
-  ostringstream ss;
+  stringstream sstream;
   TokenTree * walkNode = currentNode ;
   
   while( walkNode->rightNode != NULL ) {
@@ -2669,7 +2884,14 @@ void Plus( TokenTree* currentNode ) {
     } // if : leftNode -> function result
     
     if ( walkNode->leftToken != NULL ) {
-      inputNum = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+      if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+        PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+        inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+        gResultList.pop_back() ;
+      } // if : define type
+      
+      else inputNum = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+      
       resultFloat = inputNum + resultFloat ;
       
       if ( walkNode->leftToken->tokenTypeNum == FLOAT ) {
@@ -2680,15 +2902,15 @@ void Plus( TokenTree* currentNode ) {
   } // while: walkNode go to right node
   
   if ( isFloat ) {
-    ss  << resultFloat  ;
-    string resultString(ss.str());
+    sstream << resultFloat  ;
+    string resultString = sstream.str();
     result.resultStruct.tokenName = resultString ;
     result.resultStruct.tokenTypeNum = FLOAT ;
   } // if : float result
   else {
     resultInt = (int) resultFloat ;
-    ss  << resultInt  ;
-    string resultString(ss.str());
+    sstream << resultInt  ;
+    string resultString = sstream.str();
     result.resultStruct.tokenName = resultString ;
     result.resultStruct.tokenTypeNum = INT ;
   } // else : int result
@@ -2703,7 +2925,88 @@ void Minus( TokenTree* currentNode ) {
   float inputNum = 0.0 ;
   float resultFloat  = 0.0 ;
   bool isFloat = false ;
-  ostringstream ss;
+  stringstream sstream;
+  TokenTree * walkNode = currentNode ;
+  
+  walkNode = walkNode->rightNode ;
+  if ( walkNode->leftNode != NULL ) {
+    resultFloat = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+    
+    if ( gResultList.back().resultStruct.tokenTypeNum == FLOAT ) {
+      isFloat = true ;
+    } // if : float result
+    gResultList.pop_back() ;
+  } // if : leftNode -> function result
+  
+  if ( walkNode->leftToken != NULL ) {
+    if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+      PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+      resultFloat = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+      gResultList.pop_back() ;
+    } // if : define type
+    
+    else resultFloat = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+    
+    if ( walkNode->leftToken->tokenTypeNum == FLOAT ) {
+      isFloat = true ;
+    } // if : float result
+  } // if : leftNode -> function result
+  
+  while( walkNode->rightNode != NULL ) {
+    walkNode = walkNode->rightNode ;
+    if ( walkNode->leftNode != NULL ) {
+      inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+      resultFloat = resultFloat - inputNum ;
+      
+      if ( gResultList.back().resultStruct.tokenTypeNum == FLOAT ) {
+        isFloat = true ;
+      } // if : float result
+      gResultList.pop_back() ;
+    } // if : leftNode -> function result
+    
+    if ( walkNode->leftToken != NULL ) {
+      if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+        PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+        inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+        gResultList.pop_back() ;
+      } // if : define type
+      
+      else inputNum = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+      
+      resultFloat = resultFloat - inputNum ;
+      
+      if ( walkNode->leftToken->tokenTypeNum == FLOAT ) {
+        isFloat = true ;
+      } // if : float result
+    } // if : leftNode -> function result
+    
+  } // while: walkNode go to right node
+  
+  if ( isFloat ) {
+    sstream << resultFloat  ;
+    string resultString = sstream.str();
+    result.resultStruct.tokenName = resultString ;
+    result.resultStruct.tokenTypeNum = FLOAT ;
+  } // if : float result
+  else {
+    resultInt = (int) resultFloat ;
+    sstream << resultInt  ;
+    string resultString = sstream.str();
+    result.resultStruct.tokenName = resultString ;
+    result.resultStruct.tokenTypeNum = INT ;
+  } // else : int result
+  
+  gResultList.push_back( result ) ;
+} // Minus
+
+void Div( TokenTree* currentNode ){
+  Result result ;
+  InitialResult( result ) ;
+  int resultInt  = 0 ;
+  float inputNum = 0.0 ;
+  float resultFloat  = 0.0 ;
+  bool isFloat = false ;
+  stringstream sstream;
   TokenTree * walkNode = currentNode ;
   
   walkNode = walkNode->rightNode ;
@@ -2728,7 +3031,7 @@ void Minus( TokenTree* currentNode ) {
     walkNode = walkNode->rightNode ;
     if ( walkNode->leftNode != NULL ) {
       inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
-      resultFloat = resultFloat - inputNum ;
+      resultFloat = resultFloat / inputNum ;
       
       if ( gResultList.back().resultStruct.tokenTypeNum == FLOAT ) {
         isFloat = true ;
@@ -2737,8 +3040,15 @@ void Minus( TokenTree* currentNode ) {
     } // if : leftNode -> function result
     
     if ( walkNode->leftToken != NULL ) {
-      inputNum = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
-      resultFloat = resultFloat - inputNum ;
+      if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+        PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+        inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+        gResultList.pop_back() ;
+      } // if : define type
+      
+      else inputNum = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+      
+      resultFloat = resultFloat / inputNum ;
       
       if ( walkNode->leftToken->tokenTypeNum == FLOAT ) {
         isFloat = true ;
@@ -2748,32 +3058,81 @@ void Minus( TokenTree* currentNode ) {
   } // while: walkNode go to right node
   
   if ( isFloat ) {
-    ss  << resultFloat  ;
-    string resultString(ss.str());
+    sstream << resultFloat  ;
+    string resultString = sstream.str();
     result.resultStruct.tokenName = resultString ;
     result.resultStruct.tokenTypeNum = FLOAT ;
   } // if : float result
   else {
     resultInt = (int) resultFloat ;
-    ss  << resultInt  ;
-    string resultString(ss.str());
+    sstream << resultInt  ;
+    string resultString = sstream.str();
     result.resultStruct.tokenName = resultString ;
     result.resultStruct.tokenTypeNum = INT ;
   } // else : int result
   
   gResultList.push_back( result ) ;
-} // Minus
-
-bool Div( TokenTree* currentNode ){
-  return true ;
 } // Div()
 
-bool Mult( TokenTree* currentNode ) {
-  return true ;
+void Mult( TokenTree* currentNode ) {
+  Result result ;
+  InitialResult( result ) ;
+  int resultInt  = 0 ;
+  float inputNum = 0.0 ;
+  float resultFloat  = 1.0 ;
+  bool isFloat = false ;
+  stringstream sstream;
+  TokenTree * walkNode = currentNode ;
+  
+  while( walkNode->rightNode != NULL ) {
+    walkNode = walkNode->rightNode ;
+    if ( walkNode->leftNode != NULL ) {
+      inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+      resultFloat = resultFloat * inputNum ;
+      
+      if ( gResultList.back().resultStruct.tokenTypeNum == FLOAT ) {
+        isFloat = true ;
+      } // if : float result
+      gResultList.pop_back() ;
+    } // if : leftNode -> function result
+    
+    if ( walkNode->leftToken != NULL ) {
+      if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+        PushDefinitionToResultList( walkNode->leftToken->tokenName ) ;
+        inputNum = round( atof( gResultList.back().resultStruct.tokenName.c_str() ) * 1000 ) / 1000 ;
+        gResultList.pop_back() ;
+      } // if : define type
+      
+      else inputNum = round( atof( walkNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+      
+      resultFloat = resultFloat * inputNum ;
+      
+      if ( walkNode->leftToken->tokenTypeNum == FLOAT ) {
+        isFloat = true ;
+      } // if : float result
+    } // if : leftNode -> function result
+    
+  } // while: walkNode go to right node
+  
+  if ( isFloat ) {
+    sstream << resultFloat  ;
+    string resultString = sstream.str();
+    result.resultStruct.tokenName = resultString ;
+    result.resultStruct.tokenTypeNum = FLOAT ;
+  } // if : float result
+  else {
+    resultInt = (int) resultFloat ;
+    sstream << resultInt  ;
+    string resultString = sstream.str();
+    result.resultStruct.tokenName = resultString ;
+    result.resultStruct.tokenTypeNum = INT ;
+  } // else : int result
+  
+  gResultList.push_back( result ) ;
 } // Mult()
 
-bool Not( TokenTree* currentNode ) {
-  return true ;
+void Not( TokenTree* currentNode ) {
+  
 } // Not()
 
 bool And( TokenTree* currentNode ) {
