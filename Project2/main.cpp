@@ -8,6 +8,8 @@
 # include <string>
 # include <vector>
 # include <sstream>
+# include <algorithm>
+# include <string.h>
 
 using namespace std;
 
@@ -534,7 +536,8 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   } // if : atom?, pair?, list?, null?, integer?, real?, number?, string?, boolean?, symbol?, not
 
 
-  else if ( tokenName == "+" || tokenName == "-" || tokenName == "*" ) {
+  else if ( tokenName == "+" || tokenName == "-" || tokenName == "*" || tokenName == ">" ||
+            tokenName == ">=" || tokenName == "<" || tokenName == "<=" || tokenName == "=" ) {
 		if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL ) {
 			TokenTree* walkNode = currentNode ;
 			while( walkNode->rightNode != NULL ) {
@@ -561,12 +564,12 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
 							else {
 								DefineSymbol temp = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
 								if ( temp.binding != NULL ) {
-									SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "/", currentNode, 0, 0 ) ;
+									SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", tokenName, currentNode, 0, 0 ) ;
 									return false;
 								} // if  : in definition but node
 
 								if ( temp.tokenTypeNum != INT && temp.tokenTypeNum != FLOAT ) {
-									SetErrorMsg( PARAMETER_TYPE_ERROR, temp.definedName, "/", NULL, 0, 0 ) ;
+									SetErrorMsg( PARAMETER_TYPE_ERROR, temp.definedName, tokenName, NULL, 0, 0 ) ;
 									return false;
 								} // if : in definition but not in float
 							} // else : in definition
@@ -611,7 +614,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
 			SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
 			return false ;
 		} // else : num check false
-  } // if : +, -, *
+  } // if : +, -, *, >, >=, <, <=, =
 
 
   else if ( tokenName == "/" ) {
@@ -626,7 +629,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
       } // if : non list check
       
       if ( walkNode->leftNode != NULL ) {
-          SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "+", currentNode, 0, 0 ) ;
+          SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", tokenName, currentNode, 0, 0 ) ;
           return false;
       } // if : walkNode->leftNode
 
@@ -642,12 +645,12 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
 						else {
 							DefineSymbol temp = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
 							if ( temp.binding != NULL ) {
-								SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", "/", currentNode, 0, 0 ) ;
+								SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", tokenName, currentNode, 0, 0 ) ;
 								return false;
 							} // if  : in definition but node
 
 							if ( temp.tokenTypeNum != INT && temp.tokenTypeNum != FLOAT ) {
-								SetErrorMsg( PARAMETER_TYPE_ERROR, temp.definedName, "/", NULL, 0, 0 ) ;
+								SetErrorMsg( PARAMETER_TYPE_ERROR, temp.definedName, tokenName, NULL, 0, 0 ) ;
 								return false;
 							} // if : in definition but not in float
 						} // else : in definition
@@ -667,7 +670,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
 				else {
 					if ( ( walkNode->leftToken->tokenTypeNum == INT || walkNode->leftToken->tokenTypeNum == FLOAT ) &&
 							 walkNode->leftToken->fromQuote ) {
-						SetErrorMsg(PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "/", NULL, 0, 0);
+						SetErrorMsg(PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0);
 						return false;
 					} // if : int or float but from quote
 				} // else :  int or float
@@ -717,14 +720,14 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
 						} // if : not from quote
 
 						else {
-							SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "/", NULL, 0, 0 ) ;
+							SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0 ) ;
 							return false;
 						} // from quote but symbol
 					} // if : symbol
           
           else {
             if ( walkNode->leftToken->tokenTypeNum != INT && walkNode->leftToken->tokenTypeNum != FLOAT ) {
-              SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "/", NULL, 0, 0 ) ;
+              SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0 ) ;
               return false;
             } // if : function result is a token -> int or float
             
@@ -738,7 +741,7 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
 
             if ( ( walkNode->leftToken->tokenTypeNum == INT || walkNode->leftToken->tokenTypeNum == FLOAT ) &&
                   walkNode->leftToken->fromQuote ) {
-								SetErrorMsg(PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, "/", NULL, 0, 0);
+								SetErrorMsg(PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0);
 								return false;
             } // if : int or float but from quote
 
@@ -811,18 +814,82 @@ bool CheckParameter( TokenTree * currentNode, string tokenName ) {
   } // if : and , or
 
 
-  else if ( tokenName == ">" || tokenName == ">=" || tokenName == "<" || tokenName == "<=" ||
-					  tokenName == "=" ) {
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
-      return true ;
-    else return false ;
-  } // if : >, >=, <, <=, =
-
-
   else if ( tokenName == "string-append" || tokenName == "string>?" || tokenName == "string<?" || tokenName == "string=?" ) {
-    if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL )
-      return true ;
-    else return false ;
+		if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL ) {
+			TokenTree* walkNode = currentNode ;
+			while( walkNode->rightNode != NULL ) {
+				walkNode = walkNode->rightNode ;
+				if( walkNode->rightToken != NULL ) {
+					SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+					return false ;
+				} // if : non list check
+
+				if ( walkNode->leftNode != NULL ) {
+					SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", tokenName, walkNode->leftNode, 0, 0 ) ;
+					return false;
+				} // if : left node is a node
+
+
+				if ( walkNode->leftToken != NULL ) {
+					if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+						if ( !walkNode->leftToken->fromQuote ) {
+							if ( !CheckDefinition( walkNode->leftToken->tokenName ) ) {
+								SetErrorMsg( UNBOND_ERROR, walkNode->leftToken->tokenName, "\0", NULL, 0, 0 ) ;
+								return false ;
+							} // if : not in definition
+
+							else {
+								DefineSymbol temp = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+								if ( temp.binding != NULL ) {
+									SetErrorMsg( PARAMETER_TYPE_ERROR, "\0", tokenName, currentNode, 0, 0 ) ;
+									return false;
+								} // if  : in definition but node
+
+								if ( temp.tokenTypeNum != STRING ) {
+									SetErrorMsg( PARAMETER_TYPE_ERROR, temp.definedName, tokenName, NULL, 0, 0 ) ;
+									return false;
+								} // if : in definition but not in float
+							} // else : in definition
+						} // if : not from quote
+
+						else {
+							SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0 ) ;
+							return false;
+						} // from quote but symbol
+					} // if : symbol
+
+					else if ( walkNode->leftToken->tokenTypeNum != STRING ) {
+						SetErrorMsg( PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0 ) ;
+						return false ;
+					} // if : not int or float
+
+					else {
+						if ( walkNode->leftToken->tokenTypeNum == STRING  && walkNode->leftToken->fromQuote ) {
+							SetErrorMsg(PARAMETER_TYPE_ERROR, walkNode->leftToken->tokenName, tokenName, NULL, 0, 0);
+							return false;
+						} // if : int or float but from quote
+					} // else :  int or float
+				} // if : left token null
+
+			} // while : check every right node
+
+			return true;
+		} // if : num check
+
+		else {
+			if ( currentNode->rightToken != NULL ) {
+				SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+				return false ;
+			} // if : non list check
+
+			if ( currentNode->rightNode != NULL && currentNode->rightNode->rightToken != NULL ) {
+				SetErrorMsg( NON_LIST_ERROR, "\0", "\0", currentNode, 0, 0 ) ;
+				return false ;
+			} // if : non list check
+
+			SetErrorMsg( PARAMETER_NUM_ERROR, currentNode->leftToken->tokenName, "\0", NULL, 0, 0) ;
+			return false ;
+		} // else : num check false
   } // if : string-append, string>?, string<?, string=?
 
   else if ( tokenName == "eqv?" ) {
@@ -1127,6 +1194,33 @@ bool GetToken() {
 
 // ------------------Tree Build--------------------- //
 
+void FindPositionToBuild () {
+	int leftParenNum = 0 ;
+	int rightParenNum = 0 ;
+	bool isDone = false ;
+	for ( int i = 0 ; i < gTokens.size() ; i++ ) {
+		if ( gTokens[i].tokenTypeNum == LEFTPAREN ) leftParenNum ++ ;
+		if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) rightParenNum ++ ;
+	} // for : calculate paren num
+
+	if (  rightParenNum > 0 && leftParenNum > 0 && ( leftParenNum == ( rightParenNum + 2 ) ) ) {
+		while ( gCurrentNode->backNode != NULL && !isDone ) {
+			gCurrentNode = gCurrentNode->backNode;
+
+			if ( gCurrentNode->backNode->leftToken != NULL ) {
+				if ( IsFunction( gCurrentNode->backNode->leftToken->tokenName )  ) {
+					gCurrentNode = gCurrentNode->backNode;
+					isDone = true ;
+				} // if
+			} // if
+
+		} // while
+	} // if : up to above function
+
+	while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
+		gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
+
+} //  FindPositionToBuild ()
 
 void InsertAtomToTree() {
 	if ( gTreeRoot != NULL ) {
@@ -1232,20 +1326,8 @@ void BuildTree() {
 			} // if
 
 			else if ( gCurrentNode->leftNode != NULL ) {          // left node !null
-        
-        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
-        
-        if ( gCurrentNode->backNode != NULL ) {
-          if ( gCurrentNode->backNode->leftToken != NULL ) {
-            if ( IsFunction( gCurrentNode->backNode->leftToken->tokenName ) &&
-                 gCurrentNode->backNode->backNode != NULL )
-              gCurrentNode = gCurrentNode->backNode;
-          } // if
-        } // if
-        
-        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
+
+        FindPositionToBuild() ;
 
 				gCurrentNode->rightNode = new TokenTree;
 				gCurrentNode->rightNode->backNode = gCurrentNode;
@@ -1265,20 +1347,8 @@ void BuildTree() {
 		} // if
 
 		else if ( gCurrentNode->leftToken != NULL ) {         // left token !null
-      
-      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
-      
-      if ( gCurrentNode->backNode != NULL ) {
-        if ( gCurrentNode->backNode->leftToken != NULL ) {
-          if ( IsFunction( gCurrentNode->backNode->leftToken->tokenName ) &&
-               gCurrentNode->backNode->backNode != NULL )
-            gCurrentNode = gCurrentNode->backNode;
-        } // if
-      } // if
-      
-      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
+
+      FindPositionToBuild() ;
 
 			gCurrentNode->rightNode = new TokenTree;                       // and create right node
 			gCurrentNode->rightNode->backNode = gCurrentNode;
@@ -2625,46 +2695,348 @@ void Or( TokenTree* currentNode ) {
 void Greater( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	float compare1 = 0.0 ;
+	float compare2 = 0.0 ;
+
+	if ( currentNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->leftToken->tokenName ) ;
+			compare1 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare1 = round( atof( currentNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : first token
+
+	if ( currentNode->rightNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->rightNode->leftToken->tokenName ) ;
+			compare2 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare2 = round( atof( currentNode->rightNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : second token
+
+	if ( compare1 > compare2 ) {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // if : true
+
+	else {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // else : false
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
+
 } // Greater()
 
 void GreaterEqual( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	float compare1 = 0.0 ;
+	float compare2 = 0.0 ;
+
+	if ( currentNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->leftToken->tokenName ) ;
+			compare1 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare1 = round( atof( currentNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : first token
+
+	if ( currentNode->rightNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->rightNode->leftToken->tokenName ) ;
+			compare2 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare2 = round( atof( currentNode->rightNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : second token
+
+	if ( compare1 >= compare2 ) {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // if : true
+
+	else {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // else : false
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // GreaterEqual()
 
 void Less( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	float compare1 = 0.0 ;
+	float compare2 = 0.0 ;
+
+	if ( currentNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->leftToken->tokenName ) ;
+			compare1 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare1 = round( atof( currentNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : first token
+
+	if ( currentNode->rightNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->rightNode->leftToken->tokenName ) ;
+			compare2 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare2 = round( atof( currentNode->rightNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : second token
+
+	if ( compare1 < compare2 ) {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // if : true
+
+	else {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // else : false
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // Less()
 
 void LessEqual( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	float compare1 = 0.0 ;
+	float compare2 = 0.0 ;
+
+	if ( currentNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->leftToken->tokenName ) ;
+			compare1 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare1 = round( atof( currentNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : first token
+
+	if ( currentNode->rightNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->rightNode->leftToken->tokenName ) ;
+			compare2 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare2 = round( atof( currentNode->rightNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : second token
+
+	if ( compare1 <= compare2 ) {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // if : true
+
+	else {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // else : false
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // LessEqual()
 
 void Equal( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	float compare1 = 0.0 ;
+	float compare2 = 0.0 ;
+
+	if ( currentNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->leftToken->tokenName ) ;
+			compare1 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare1 = round( atof( currentNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : first token
+
+	if ( currentNode->rightNode->rightNode->leftToken ) {
+		if ( currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( currentNode->rightNode->rightNode->leftToken->tokenName ) ;
+			compare2 = round( atof( defined.definedName.c_str() ) * 1000 ) / 1000 ;
+		} // if : define symbol
+
+		else compare2 = round( atof( currentNode->rightNode->rightNode->leftToken->tokenName.c_str() ) * 1000 ) / 1000 ;
+	} // if : second token
+
+	if ( compare1 == compare2 ) {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // if : true
+
+	else {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // else : false
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // Equal()
 
 void Str_Append( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
-	int resultTokenType = NO_TYPE ;
+	int resultTokenType = STRING ;
+	TokenTree* walkNode = currentNode ;
+
+	while( walkNode->rightNode != NULL ) {
+		walkNode = walkNode->rightNode ;
+		if ( walkNode->leftToken != NULL ) {
+			if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+				DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+				resultTokenName = resultTokenName + defined.definedName ;
+			} // if : left token is symbol
+
+			else resultTokenName = resultTokenName + walkNode->leftToken->tokenName ;
+		} // if : left token
+	} // while : walk every node
+
+	resultTokenName.erase( remove( resultTokenName.begin(), resultTokenName.end(), '"' ), resultTokenName.end() );
+	resultTokenName = "\"" + resultTokenName ;
+	resultTokenName = resultTokenName + "\"" ;
+	ResultConnectToTree(currentNode, NULL, resultTokenName, resultTokenType, false) ;
 } // Str_Append()
 
-void Is_Str_Greater(  TokenTree* currentNode) {
+void Is_Str_Greater(  TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	string compare1 = "\0" ;
+	string compare2 = "\0" ;
+	TokenTree* walkNode = currentNode ;
+	bool isNil = false ;
+
+	walkNode = walkNode->rightNode ;
+	if ( walkNode->leftToken != NULL ) {
+		if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+			compare1 =  defined.definedName ;
+		} // if : left token is symbol
+
+		else compare1 =  walkNode->leftToken->tokenName ;
+	} // if : left token
+
+	while ( walkNode->rightNode != NULL ) {
+		walkNode = walkNode->rightNode ;
+		if ( walkNode->leftToken != NULL ) {
+			if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+				DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+				compare2 =  defined.definedName ;
+			} // if : left token is symbol
+
+			else compare2 =  walkNode->leftToken->tokenName ;
+		} // if : left token
+
+		if ( strcmp( compare1.c_str(), compare2.c_str() ) <= 0 ) isNil = true ;
+		compare1 = compare2 ;
+	} // while : walk all node
+
+	if ( isNil ) {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // is false
+
+	else {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // is true
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // Is_Str_Greater()
 
 void Is_Str_Less( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	string compare1 = "\0" ;
+	string compare2 = "\0" ;
+	TokenTree* walkNode = currentNode ;
+	bool isNil = false ;
+
+	walkNode = walkNode->rightNode ;
+	if ( walkNode->leftToken != NULL ) {
+		if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+			compare1 =  defined.definedName ;
+		} // if : left token is symbol
+
+		else compare1 =  walkNode->leftToken->tokenName ;
+	} // if : left token
+
+	while ( walkNode->rightNode != NULL ) {
+		walkNode = walkNode->rightNode ;
+		if ( walkNode->leftToken != NULL ) {
+			if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+				DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+				compare2 =  defined.definedName ;
+			} // if : left token is symbol
+
+			else compare2 =  walkNode->leftToken->tokenName ;
+		} // if : left token
+
+		if ( strcmp( compare1.c_str(), compare2.c_str() ) >= 0 ) isNil = true ;
+		compare1 = compare2 ;
+	} // while : walk all node
+
+	if ( isNil ) {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // is false
+
+	else {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // is true
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // Is_Str_Less()
 
 void Is_Str_Equal( TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
+	string compare1 = "\0" ;
+	string compare2 = "\0" ;
+	TokenTree* walkNode = currentNode ;
+	bool isNil = false ;
+
+	walkNode = walkNode->rightNode ;
+	if ( walkNode->leftToken != NULL ) {
+		if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+			DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+			compare1 =  defined.definedName ;
+		} // if : left token is symbol
+
+		else compare1 =  walkNode->leftToken->tokenName ;
+	} // if : left token
+
+	while ( walkNode->rightNode != NULL ) {
+		walkNode = walkNode->rightNode ;
+		if ( walkNode->leftToken != NULL ) {
+			if ( walkNode->leftToken->tokenTypeNum == SYMBOL ) {
+				DefineSymbol defined = GetDefineSymbol( walkNode->leftToken->tokenName ) ;
+				compare2 =  defined.definedName ;
+			} // if : left token is symbol
+
+			else compare2 =  walkNode->leftToken->tokenName ;
+		} // if : left token
+
+		if ( strcmp( compare1.c_str(), compare2.c_str() ) != 0 ) isNil = true ;
+		compare1 = compare2 ;
+	} // while : walk all node
+
+	if ( isNil ) {
+		resultTokenName = "nil" ;
+		resultTokenType = NIL ;
+	} // is false
+
+	else {
+		resultTokenName = "#t" ;
+		resultTokenType = T ;
+	} // is true
+
+	ResultConnectToTree( currentNode, NULL, resultTokenName, resultTokenType, false ) ;
 } // Is_Str_Equal()
 
 void Is_Eqv( TokenTree* currentNode ) {
@@ -2682,7 +3054,7 @@ void Begin( TokenTree* currentNode ) {
 	int resultTokenType = NO_TYPE ;
 } // Begin()
 
-void If(  TokenTree* currentNode) {
+void If(  TokenTree* currentNode ) {
 	string resultTokenName = "\0" ;
 	int resultTokenType = NO_TYPE ;
 } // If()
