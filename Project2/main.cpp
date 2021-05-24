@@ -1490,6 +1490,24 @@ bool SyntaxChecker() {
 
 } // SyntaxChecker()
 
+void CreateTree( TokenTree * currentNode, int i ) {
+	if ( AtomJudge( gTokens[i].tokenTypeNum )  ) {
+		InsertAtomToTree() ;
+		CreateTree( gCurrentNode, i++ ) ;
+	} // if : atom
+
+	if ( gTokens[i].tokenTypeNum == LEFTPAREN ) {
+		BuildTree() ;
+		CreateTree( gCurrentNode, i++ ) ;
+	} // if : left paren
+
+	if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) {
+		return ;
+	} // if : right paren
+
+
+} // CreateTree()
+
 // ------------------Print Function--------------------- //
 
 
@@ -3191,6 +3209,7 @@ int main() {
 		cout << "> ";
 		if ( GetToken()) {
 			if ( SyntaxChecker()) {
+				CreateTree( gTreeRoot, 0 ) ;
 				if ( !ExitDetect()) {
           if ( EvaluateSExp() ) PrintFunctionMsg() ;
           else PrintErrorMessage();
