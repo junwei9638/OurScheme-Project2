@@ -1192,195 +1192,15 @@ bool GetToken() {
 
 } // GetToken()
 
-// ------------------Tree Build--------------------- //
-
-void FindPositionToBuild () {
-	int leftParenNum = 0 ;
-	int rightParenNum = 0 ;
-	bool isDone = false ;
-	for ( int i = 0 ; i < gTokens.size() ; i++ ) {
-		if ( gTokens[i].tokenTypeNum == LEFTPAREN ) leftParenNum ++ ;
-		if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) rightParenNum ++ ;
-	} // for : calculate paren num
-
-	if (  rightParenNum > 0 && leftParenNum > 0 && ( leftParenNum == ( rightParenNum + 2 ) ) ) {
-		while ( gCurrentNode->backNode != NULL && !isDone ) {
-			gCurrentNode = gCurrentNode->backNode;
-
-			if ( gCurrentNode->backNode->leftToken != NULL ) {
-				if ( IsFunction( gCurrentNode->backNode->leftToken->tokenName )  ) {
-					gCurrentNode = gCurrentNode->backNode;
-					isDone = true ;
-				} // if
-			} // if
-
-		} // while
-	} // if : up to above function
-
-	while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-		gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
-
-} //  FindPositionToBuild ()
-
-void InsertAtomToTree() {
-	if ( gTreeRoot != NULL ) {
-		if ( gCurrentNode->leftToken == NULL ) {                              // left token null
-			if ( gCurrentNode->leftNode == NULL ) {                             // left node null -> insert left
-				gCurrentNode->leftToken = new Token;
-        InitialToken( gCurrentNode->leftToken ) ;
-				gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
-				gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
-			} // if
-
-			else if ( gCurrentNode->leftNode != NULL ) {                        // left node !null
-        
-        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-          gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
-        
-        if ( gCurrentNode->backNode != NULL ) {
-          if ( gCurrentNode->backNode->leftToken != NULL ) {
-            if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE &&
-                 gCurrentNode->backNode->backNode != NULL )
-              gCurrentNode = gCurrentNode->backNode;
-          } // if
-        } // if
-        
-        while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-          gCurrentNode = gCurrentNode->backNode;  // find right node null and above functionr
-
-				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
-					gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
-					gCurrentNode->rightNode->backNode = gCurrentNode;
-					gCurrentNode = gCurrentNode->rightNode;
-          gCurrentNode->NeedToBePrimitive = false ;
-					InitialNode( gCurrentNode );
-					gCurrentNode->leftToken = new Token;
-          InitialToken( gCurrentNode->leftToken ) ;
-					gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
-					gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
-				} // if
-
-				else if ( gTokens[gTokens.size() - 2].tokenTypeNum == DOT ) {            // insert right token
-					gCurrentNode->rightToken = new Token;
-          InitialToken( gCurrentNode->rightToken ) ;
-					gCurrentNode->rightToken->tokenName = gTokens.back().tokenName;
-					gCurrentNode->rightToken->tokenTypeNum = gTokens.back().tokenTypeNum;
-				} // if
-			} // if
-		} // if
-
-		else if ( gCurrentNode->leftToken != NULL ) {                       // left token !null
-      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
-
-      if ( gCurrentNode->backNode != NULL ) {
-        if ( gCurrentNode->backNode->leftToken != NULL ) {
-          if ( gCurrentNode->backNode->leftToken->tokenTypeNum == QUOTE &&
-               gCurrentNode->backNode->backNode != NULL )
-            gCurrentNode = gCurrentNode->backNode;
-        } // if
-      } // if
-      
-      while ( gCurrentNode->rightNode != NULL && gCurrentNode->backNode != NULL )
-        gCurrentNode = gCurrentNode->backNode;  // find right node null and above function
-      
-			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create right node
-				gCurrentNode->rightNode = new TokenTree;                       // and insert to left token
-				gCurrentNode->rightNode->backNode = gCurrentNode;
-				gCurrentNode = gCurrentNode->rightNode;
-        gCurrentNode->NeedToBePrimitive = false ;
-				InitialNode( gCurrentNode );
-				gCurrentNode->leftToken = new Token;
-        InitialToken( gCurrentNode->leftToken ) ;
-				gCurrentNode->leftToken->tokenName = gTokens.back().tokenName;
-				gCurrentNode->leftToken->tokenTypeNum = gTokens.back().tokenTypeNum;
-			} // if
-
-			else if ( gTokens[gTokens.size() - 2].tokenTypeNum == DOT ) {            // if == dot-> insert right token
-				gCurrentNode->rightToken = new Token;
-        InitialToken( gCurrentNode->rightToken ) ;
-				gCurrentNode->rightToken->tokenName = gTokens.back().tokenName;
-				gCurrentNode->rightToken->tokenTypeNum = gTokens.back().tokenTypeNum;
-			} // if
-		} // if
-	} // if
-} // InsertAtomToTree()
-
-void BuildTree() {
-	if ( gTreeRoot == NULL ) {
-		gTreeRoot = new TokenTree;
-		gCurrentNode = gTreeRoot;
-		gCurrentNode->backNode = NULL ;
-    gCurrentNode->NeedToBePrimitive = true ;
-		InitialNode( gCurrentNode );
-	} // if
-
-	else {
-		if ( gCurrentNode->leftToken == NULL ) {                // left token null
-			if ( gCurrentNode->leftNode == NULL ) {               // left node null-> create node
-				gCurrentNode->leftNode = new TokenTree;
-				gCurrentNode->leftNode->backNode = gCurrentNode;
-				gCurrentNode = gCurrentNode->leftNode;
-        gCurrentNode->NeedToBePrimitive = true ;
-				InitialNode( gCurrentNode );
-			} // if
-
-			else if ( gCurrentNode->leftNode != NULL ) {          // left node !null
-
-        FindPositionToBuild() ;
-
-				gCurrentNode->rightNode = new TokenTree;
-				gCurrentNode->rightNode->backNode = gCurrentNode;
-				gCurrentNode = gCurrentNode->rightNode;
-        gCurrentNode->NeedToBePrimitive = false ;
-				InitialNode( gCurrentNode );
-
-				if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {    // if !dot-> create left node
-					gCurrentNode->leftNode = new TokenTree;
-					gCurrentNode->leftNode->backNode = gCurrentNode;
-					gCurrentNode = gCurrentNode->leftNode;
-          gCurrentNode->NeedToBePrimitive = true ;
-					InitialNode( gCurrentNode );
-				} // if
-
-			} // if
-		} // if
-
-		else if ( gCurrentNode->leftToken != NULL ) {         // left token !null
-
-      FindPositionToBuild() ;
-
-			gCurrentNode->rightNode = new TokenTree;                       // and create right node
-			gCurrentNode->rightNode->backNode = gCurrentNode;
-			gCurrentNode = gCurrentNode->rightNode;
-      gCurrentNode->NeedToBePrimitive = false;
-			InitialNode( gCurrentNode );
-
-			if ( gTokens[gTokens.size() - 2].tokenTypeNum != DOT ) {                 // if !dot-> create left node
-				gCurrentNode->leftNode = new TokenTree;
-				gCurrentNode->leftNode->backNode = gCurrentNode;
-				gCurrentNode = gCurrentNode->leftNode;
-        gCurrentNode->NeedToBePrimitive = true ;
-				InitialNode( gCurrentNode );
-			} // if
-
-		} // if
-	} // else
-} // BuildTree()
+// ------------------ReadSExp--------------------- //
 
 
 bool SyntaxChecker() {
-	if ( AtomJudge(gTokens.back().tokenTypeNum)) {
-		// cout << "Atom " ;
-
-		if ( gTreeRoot != NULL ) InsertAtomToTree();
+	if ( AtomJudge(gTokens.back().tokenTypeNum ) ) {
 		return true;
 	} // if
 
-
 	else if ( gTokens.back().tokenTypeNum == LEFTPAREN ) {
-
-		BuildTree();                                                 // // create node
 
 		if ( !GetToken()) return false;
 
@@ -1415,7 +1235,6 @@ bool SyntaxChecker() {
 			} // if
 
 			if ( gTokens.back().tokenTypeNum == RIGHTPAREN ) {
-				gCurrentNode = gCurrentNode->backNode;
 				return true;
 			} // if
 			else {
@@ -1443,17 +1262,14 @@ bool SyntaxChecker() {
 		temp.tokenName = "(";
 		temp.tokenTypeNum = LEFTPAREN;
 		gTokens.push_back(temp);
-		BuildTree();
 		temp.tokenName = "quote";
 		temp.tokenTypeNum = QUOTE;
 		gTokens.push_back(temp);
-		InsertAtomToTree() ;
 
 		if ( GetToken()) {
 			if ( SyntaxChecker()) {
 				temp.tokenName = ")";
 				temp.tokenTypeNum = RIGHTPAREN;
-        gCurrentNode = gCurrentNode->backNode ;
 				gTokens.push_back(temp);
 				return true;
 			} // if :push right paren
@@ -1469,8 +1285,6 @@ bool SyntaxChecker() {
 
 	else if ( gTokens.back().tokenTypeNum == QUOTE && gTokens.back().tokenName == "quote" ) {
 		// cout << "Quote " ;
-		Token temp;
-		InsertAtomToTree() ;
 
 		if ( GetToken()) {
 			if ( SyntaxChecker()) return true;
@@ -1490,23 +1304,93 @@ bool SyntaxChecker() {
 
 } // SyntaxChecker()
 
-void CreateTree( TokenTree * currentNode, int i ) {
-	if ( AtomJudge( gTokens[i].tokenTypeNum )  ) {
-		InsertAtomToTree() ;
-		CreateTree( gCurrentNode, i++ ) ;
-	} // if : atom
 
-	if ( gTokens[i].tokenTypeNum == LEFTPAREN ) {
-		BuildTree() ;
-		CreateTree( gCurrentNode, i++ ) ;
-	} // if : left paren
 
-	if ( gTokens[i].tokenTypeNum == RIGHTPAREN ) {
-		return ;
-	} // if : right paren
+void CreateTree( TokenTree * currentNode,  vector<Token> & Tokens, bool isRight ) {
+  if ( AtomJudge( Tokens.front().tokenTypeNum ) ||  Tokens.front().tokenTypeNum == QUOTE ) {
+    if ( isRight ) {
+      currentNode->rightToken = new Token ;
+      InitialToken( currentNode->rightToken ) ;
+      currentNode->rightToken->tokenName = Tokens.front().tokenName ;
+      currentNode->rightToken->tokenTypeNum = Tokens.front().tokenTypeNum ;
+      Tokens.erase( Tokens.begin() ) ;
+    } // if : isRight
+    
+    else {
+      currentNode->leftToken = new Token ;
+      InitialToken( currentNode->leftToken ) ;
+      currentNode->leftToken->tokenName = Tokens.front().tokenName ;
+      currentNode->leftToken->tokenTypeNum = Tokens.front().tokenTypeNum ;
+      Tokens.erase( Tokens.begin() ) ;
+    } // if : isLeft
+  } // if
+
+
+  else if ( Tokens.front().tokenTypeNum == LEFTPAREN ) {
+    if ( isRight ) {
+      currentNode->rightNode = new TokenTree ;
+      currentNode->rightNode->backNode = currentNode ;
+      InitialNode( currentNode->rightNode ) ;
+      Tokens.erase( Tokens.begin() ) ;
+      CreateTree( currentNode->rightNode, Tokens, false ) ;
+      currentNode = currentNode->rightNode ;
+    } // if : isRight
+    
+    else {
+        currentNode->leftNode = new TokenTree ;
+        currentNode->leftNode->backNode = currentNode ;
+        currentNode->leftNode->NeedToBePrimitive = true ;
+        InitialNode( currentNode->leftNode ) ;
+        Tokens.erase( Tokens.begin() ) ;
+        CreateTree( currentNode->leftNode, Tokens, false ) ;
+        currentNode = currentNode->leftNode ;
+    } // else : is left
+    
+    
+    while ( Tokens.front().tokenTypeNum == LEFTPAREN || Tokens.front().tokenTypeNum == QUOTE ||
+          AtomJudge( Tokens.front().tokenTypeNum ) ) {
+      currentNode->rightNode = new TokenTree ;
+      currentNode->rightNode->backNode = currentNode ;
+      InitialNode( currentNode->rightNode ) ;
+      CreateTree( currentNode->rightNode, Tokens, false ) ;
+      currentNode = currentNode->rightNode ;
+    } // while
+   
+
+    if ( Tokens.front().tokenTypeNum == DOT ) {
+      Tokens.erase( Tokens.begin() ) ;
+      CreateTree( currentNode, Tokens, true ) ;
+    } // if : Dot
+
+    if ( Tokens.front().tokenTypeNum == RIGHTPAREN ) {
+      Tokens.erase( Tokens.begin() ) ;
+      return ;
+    } // if : right paren
+    
+  } // if : left paren
 
 
 } // CreateTree()
+
+
+bool ReadSExp() {
+  if ( SyntaxChecker() ) {
+    vector<Token> tokens = gTokens ;
+    gTreeRoot = new TokenTree;
+    gCurrentNode = gTreeRoot;
+    gCurrentNode->backNode = NULL ;
+    gCurrentNode->NeedToBePrimitive = true ;
+    InitialNode( gCurrentNode );
+      
+    CreateTree( gCurrentNode, tokens, false ) ;
+    
+    return true ;
+  } // if
+  
+  else return false;
+    
+} // ReadSExp()
+
 
 // ------------------Print Function--------------------- //
 
@@ -1519,25 +1403,17 @@ static bool lineReturn = false ;
     layer ++ ;
   } // if
   
-  if ( currentNode->leftToken != NULL ) {
-    if ( currentNode->leftToken->tokenTypeNum == QUOTE )
-      lineReturn = false ;
-  } // if
 
   if ( lineReturn ) {
     for( int i = 0; i < layer; i++ ) cout << "  " ;
   } // if
   
-  if ( currentNode->leftToken != NULL && currentNode->leftToken->tokenTypeNum != QUOTE ) {
+  if ( currentNode->leftToken != NULL ) {
     cout << currentNode->leftToken->tokenName << endl ;
     lineReturn = true ;
   } // if
   
-  if ( currentNode->leftNode ) {
-    if ( currentNode->leftNode->leftToken && currentNode->leftNode->leftToken->tokenTypeNum == QUOTE )
-      PrintSExpTree( currentNode->leftNode, true, layer ) ;
-    else PrintSExpTree( currentNode->leftNode, false, layer ) ;
-  } // if : Quote situatuon
+  if ( currentNode->leftNode ) PrintSExpTree( currentNode->leftNode, false, layer ) ;
   
   if ( currentNode->rightNode ) PrintSExpTree( currentNode->rightNode, true, layer ) ;
 
@@ -1561,7 +1437,8 @@ static bool lineReturn = false ;
 void PrintFunctionMsg() {
   int layer = 0;
   if ( gTreeRoot != NULL ) {
-    if ( gTreeRoot->leftToken != NULL && gTreeRoot->rightToken == NULL && gTreeRoot->rightNode == NULL) {
+    if ( gTreeRoot->leftToken != NULL ) {
+      
       if ( gTreeRoot->leftToken->tokenTypeNum == FLOAT ) {
         cout << fixed << setprecision(3)
             << round( atof( gTreeRoot->leftToken->tokenName.c_str() ) * 1000 ) / 1000 << endl;
@@ -1570,7 +1447,7 @@ void PrintFunctionMsg() {
     } // if : only one result
       
     else {
-      PrintSExpTree( gTreeRoot, false, layer ) ;
+      PrintSExpTree( gTreeRoot->leftNode, false, layer ) ;
       for ( int i = 0; i < layer; i++ ) cout << ")" << endl ;
     } // else
   } // if
@@ -3177,7 +3054,7 @@ bool TraversalTreeAndCheck( TokenTree * currentNode, bool quoteScope ) {
 } // TraversalTreeAndCheck()
 
 bool EvaluateSExp(){
-  gCurrentNode = gTreeRoot ;
+  gCurrentNode = gTreeRoot->leftNode ;
   bool quoteScope = false ;
   if ( gCurrentNode == NULL ) {                   // find definition symbol
     if ( gTokens[0].tokenTypeNum == SYMBOL ) {
@@ -3208,8 +3085,7 @@ int main() {
 	do {
 		cout << "> ";
 		if ( GetToken()) {
-			if ( SyntaxChecker()) {
-				CreateTree( gTreeRoot, 0 ) ;
+			if ( ReadSExp() ) {
 				if ( !ExitDetect()) {
           if ( EvaluateSExp() ) PrintFunctionMsg() ;
           else PrintErrorMessage();
