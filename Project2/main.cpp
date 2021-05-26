@@ -88,10 +88,10 @@ int gErrorColumn = 0;
 class Exception : public exception {
  public:
 	int mErrorType ;
-	string mErrorMsg ;
+	const char* mErrorMsg ;
   TokenTree* mErrorNode ;
 
-	Exception( int type, string errorMsg, TokenTree * errorNode ) {
+  Exception( int type, const char* errorMsg, TokenTree * errorNode ) {
 		mErrorType = type ;
     mErrorMsg = errorMsg ;
     mErrorNode = errorNode ;
@@ -271,14 +271,14 @@ public:
   void CheckNonList( TokenTree* currentNode ) {
     if ( currentNode->rightToken ) {
       string errorMsg = "ERROR (non-list) : ";
-      throw Exception( NON_LIST_ERROR, errorMsg, currentNode ) ;
+      throw Exception( NON_LIST_ERROR, errorMsg.c_str(), currentNode ) ;
     } // if : nonlist
     
     while ( currentNode->rightNode ) {
       currentNode = currentNode->rightNode ;
       if ( currentNode->rightToken ) {
         string errorMsg = "ERROR (non-list) : ";
-        throw Exception( NON_LIST_ERROR, errorMsg, currentNode ) ;
+        throw Exception( NON_LIST_ERROR, errorMsg.c_str(), currentNode ) ;
       } // if : nonlist
     } // while : check right token
     
@@ -293,7 +293,7 @@ public:
     
     if ( num != needNum ) {
       string errorMsg = "ERROR (incorrect number of arguments) : " + functionName ;
-      throw Exception( PARAMETER_NUM_ERROR, errorMsg, NULL ) ;
+      throw Exception( PARAMETER_NUM_ERROR, errorMsg.c_str(), NULL ) ;
     } // if : throw exception
     
   } // CheckParameterNum( )
@@ -3022,7 +3022,7 @@ public:
         
         else {
           string errorMsg = "ERROR (unbound symbol) : " + currentNode->leftToken->tokenName ;
-          throw Exception( UNBOND_ERROR, errorMsg, NULL ) ;
+          throw Exception( UNBOND_ERROR, errorMsg.c_str(), NULL ) ;
         } // else : throw exception
         
       } // if : if SYMBOL->check definition
@@ -3038,7 +3038,7 @@ public:
         
         else {
           string errorMsg = "ERROR (attempt to apply non-function) : " + currentNode->leftNode->leftToken->tokenName ;
-          throw Exception( NO_APPLY_ERROR, errorMsg, NULL ) ;
+          throw Exception( NO_APPLY_ERROR, errorMsg.c_str(), NULL ) ;
         } // else : no apply error
       } // if
       
