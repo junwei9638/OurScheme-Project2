@@ -19,7 +19,6 @@ struct Token {
 	int tokenTypeNum;
 	int tokenColumn;
 	int tokenLine;
-  bool fromQuote ;
 }; // TokenType
 
 struct TokenTree {
@@ -28,7 +27,8 @@ struct TokenTree {
 	TokenTree *leftNode;
 	TokenTree *rightNode;
 	TokenTree *backNode;
-  bool NeedToBePrimitive;
+  bool needToBePrimitive;
+  bool fromQuote ;
 }; // TokenType
 
 struct DefineSymbol {
@@ -89,23 +89,20 @@ class Exception : public exception {
  public:
 	int mErrorType ;
 	string mErrorMsg ;
+  TokenTree* mErrorNode ;
 
-	Exception( int type ) {
+	Exception( int type, string errorMsg, TokenTree * errorNode ) {
 		mErrorType = type ;
+    mErrorMsg = errorMsg ;
+    mErrorNode = errorNode ;
 	}  // Exception()
-
-	Exception( int type, string tokenName, string functionName ) {
-		mErrorType = type ;
-	}  // Exception()
-
-
-
+  
 }; // ErrorHandling class
 
 class Project {
+public:
 // ------------------Setting Function--------------------- //
- public:
-	void InitialLineColumn() {
+  void InitialLineColumn() {
 		gLine = 1;
 		gColumn = 0;
 	} // InitialLineColumn()
@@ -115,10 +112,10 @@ class Project {
 		currentNode->leftToken = NULL;
 		currentNode->rightNode = NULL;
 		currentNode->rightToken = NULL;
+    currentNode->fromQuote = false ;
 	} // InitialNode()
 
 	void InitialToken( Token *token ) {
-		token->fromQuote = false;
 		token->tokenColumn = 0;
 		token->tokenLine = 0;
 		token->tokenName = "\0";
@@ -162,12 +159,9 @@ class Project {
 		if ( peek == '\n' ) cin.get();
 	} // ClearInput()
 
-	void SetErrorMsg( int errorType, string errorToken, string errorFunction, TokenTree *errorBinding, int line,
-										int column ) {
+	void SetErrorMsg( int errorType, string errorToken, int line, int column ) {
 		gErrorMsgType = errorType;
 		gErrorMsgName = errorToken;
-		gErrorFunctionName = errorFunction;
-		gErrorBinding = errorBinding;
 		gErrorLine = line;
 		gErrorColumn = column;
 	} // SetErrorMsg()
@@ -184,36 +178,6 @@ class Project {
 		gAtomType = 0;
 	} // GlobalVariableReset()
 
-	void ResultConnectToTree( TokenTree *currentNode, TokenTree *resultNode, string tokenName, int tokentype,
-														bool fromQuote ) {
-		Token *temp = new Token;
-		if ( currentNode->backNode != NULL ) {
-			currentNode = currentNode->backNode;
-			if ( resultNode != NULL ) {
-				currentNode->leftToken = NULL;
-				currentNode->leftNode = resultNode;
-			} // if
-			else {
-				currentNode->leftNode = NULL;
-				temp->tokenName = tokenName;
-				temp->tokenTypeNum = tokentype;
-				temp->fromQuote = fromQuote;
-				currentNode->leftToken = temp;
-			} // else
-		} // if
-
-		else {
-			InitialNode(gTreeRoot);
-			gTreeRoot->backNode = NULL;
-			if ( resultNode != NULL ) gTreeRoot = resultNode;
-			else {
-				temp->tokenName = tokenName;
-				temp->tokenTypeNum = tokentype;
-				temp->fromQuote = fromQuote;
-				gTreeRoot->leftToken = temp;
-			} // else
-		} // else : connect to root
-	} // ResultConnectToTree()
 
 	void InitialDefineStruct( DefineSymbol &define ) {
 		define.symbolName = "\0";
@@ -289,24 +253,52 @@ class Project {
 			if ( tokenName == gDefineSymbols[i].symbolName ) return true;
 		} // for
 
-		SetErrorMsg(UNBOND_ERROR, tokenName, "\0", NULL, 0, 0);
 		return false;
 	} // CheckDefinition()
 
-	bool FindRightToken( TokenTree *currentNode ) {
+	bool CheckRightToken( TokenTree *currentNode ) {
 
 		if ( currentNode != NULL ) {
 			if ( currentNode->rightToken != NULL ) return true;
 
-			if ( FindRightToken(currentNode->leftNode)) return true;
-			if ( FindRightToken(currentNode->rightNode)) return true;
+			if ( CheckRightToken(currentNode->leftNode)) return true;
+			if ( CheckRightToken(currentNode->rightNode)) return true;
 		} // if : current node judge
 
 		return false;
 	}  // FindRightToken()
 
+  void CheckNonList( TokenTree* currentNode ) {
+    if ( currentNode->rightToken ) {
+      string errorMsg = "ERROR (non-list) : ";
+      throw Exception( NON_LIST_ERROR, errorMsg, currentNode ) ;
+    } // if : nonlist
+    
+    while ( currentNode->rightNode ) {
+      currentNode = currentNode->rightNode ;
+      if ( currentNode->rightToken ) {
+        string errorMsg = "ERROR (non-list) : ";
+        throw Exception( NON_LIST_ERROR, errorMsg, currentNode ) ;
+      } // if : nonlist
+    } // while : check right token
+    
+  } // CheckNonList()
+  
+  void CheckParameterNum( TokenTree* currentNode, int needNum, string functionName ) {
+    int num = 0 ;
+    while ( currentNode->rightNode ) {
+      currentNode = currentNode->rightNode ;
+      num++ ;
+    } // while
+    
+    if ( num != needNum ) {
+      string errorMsg = "ERROR (incorrect number of arguments) : " + functionName ;
+      throw Exception( PARAMETER_NUM_ERROR, errorMsg, NULL ) ;
+    } // if : throw exception
+    
+  } // CheckParameterNum( )
 
-	bool CheckParameter( TokenTree *currentNode, string tokenName ) {
+	/*bool CheckParameter( TokenTree *currentNode, string tokenName ) {
 		if ( tokenName == "cons" ) {
 			if ( currentNode->rightNode != NULL && currentNode->rightNode->rightNode != NULL &&
 					 currentNode->rightNode->rightNode->rightNode == NULL ) {
@@ -970,7 +962,7 @@ class Project {
 		} // if
 
 		return false;
-	} // CheckParameter()
+	} // CheckParameter()*/
 
 
 // ------------------Get Token--------------------- //
@@ -1026,10 +1018,10 @@ class Project {
 
 
 		if ( closeQuote == false ) {
-			if ( peek == EOF)
-				SetErrorMsg(EOF_ERROR, "\"", "\0", NULL, 0, 0);
+			if ( peek == EOF )
+				SetErrorMsg( EOF_ERROR, "\"",  0, 0);
 			else if ( peek == '\n' )
-				SetErrorMsg(CLOSE_ERROR, "\"", "\0", NULL, gLine, gColumn + 1);
+				SetErrorMsg( CLOSE_ERROR, "\"",  gLine, gColumn + 1);
 			return "\0";
 		} // if                                        // no closing quote
 
@@ -1158,8 +1150,8 @@ class Project {
 		token.tokenColumn = 0;
 		token.tokenLine = 0;
 
-		if ( peek == EOF) {
-			SetErrorMsg(EOF_ERROR, " ", "\0", NULL, 0, 0);
+		if ( peek == EOF ) {
+			SetErrorMsg(EOF_ERROR, "\0",  0, 0);
 			gIsEnd = true;
 			return false;
 		} // if
@@ -1214,7 +1206,7 @@ class Project {
 				token.tokenName = GetAtom();
 				int notSymbol = (int) token.tokenName.find('"');
 				if ( notSymbol != token.tokenName.npos ) {
-					SetErrorMsg(CLOSE_ERROR, "\"", "\0", NULL, 0, 0);
+					SetErrorMsg(CLOSE_ERROR, "\"", 0, 0);
 					return false;
 				} // if
 			} // else
@@ -1258,7 +1250,7 @@ class Project {
 						else {
 							if ( gErrorMsgType == NOT_S_EXP_ERROR ) {
 								SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-														"\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                            gTokens.back().tokenLine, gTokens.back().tokenColumn);
 							} // if
 
 							return false;
@@ -1274,7 +1266,7 @@ class Project {
 				} // if
 				else {
 					SetErrorMsg(RIGHT_ERROR, gTokens.back().tokenName,
-											"\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                      gTokens.back().tokenLine, gTokens.back().tokenColumn);
 					return false;
 				} // else
 			} // if
@@ -1282,7 +1274,7 @@ class Project {
 			else {
 				if ( gErrorMsgType == NOT_S_EXP_ERROR ) {
 					SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-											"\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
+											gTokens.back().tokenLine, gTokens.back().tokenColumn);
 				} // if
 
 				return false;
@@ -1310,7 +1302,7 @@ class Project {
 				} // if :push right paren
 				else {
 					SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-											"\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
+											gTokens.back().tokenLine, gTokens.back().tokenColumn);
 					return false;
 				} // else
 			} // if
@@ -1325,7 +1317,7 @@ class Project {
 				if ( SyntaxChecker()) return true;
 				else {
 					SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-											"\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
+											gTokens.back().tokenLine, gTokens.back().tokenColumn);
 					return false;
 				} // else
 			} // if
@@ -1334,7 +1326,7 @@ class Project {
 		} // if
 
 		SetErrorMsg(NOT_S_EXP_ERROR, gTokens.back().tokenName,
-								"\0", NULL, gTokens.back().tokenLine, gTokens.back().tokenColumn);
+								gTokens.back().tokenLine, gTokens.back().tokenColumn);
 		return false;
 
 	} // SyntaxChecker()
@@ -1374,10 +1366,10 @@ class Project {
 			else {
 				currentNode->leftNode = new TokenTree;
 				currentNode->leftNode->backNode = currentNode;
-				currentNode->leftNode->NeedToBePrimitive = true;
-				InitialNode(currentNode->leftNode);
+				currentNode->leftNode->needToBePrimitive = true;
+				InitialNode( currentNode->leftNode );
 				Tokens.erase(Tokens.begin());
-				CreateTree(currentNode->leftNode, Tokens, false);
+				CreateTree( currentNode->leftNode, Tokens, false );
 				currentNode = currentNode->leftNode;
 			} // else : is left
 
@@ -1414,7 +1406,6 @@ class Project {
 			gTreeRoot = new TokenTree;
 			gCurrentNode = gTreeRoot;
 			gCurrentNode->backNode = NULL;
-			gCurrentNode->NeedToBePrimitive = true;
 			InitialNode(gCurrentNode);
 
 			CreateTree(gCurrentNode, tokens, false);
@@ -1472,21 +1463,8 @@ class Project {
 	void PrintFunctionMsg() {
 		int layer = 0;
 		if ( gTreeRoot != NULL ) {
-			if ( gTreeRoot->leftToken != NULL ) {
-				if ( gTreeRoot->leftToken->tokenTypeNum == SYMBOL ) {
-					if ( IsFunction(gTreeRoot->leftToken->tokenName))
-						cout << "#<procedure " << gTokens[0].tokenName << ">" << endl;
-					else {
-						DefineSymbol defined = GetDefineSymbol(gTreeRoot->leftToken->tokenName);
-						if ( defined.definedName != "\0" ) cout << defined.definedName << endl;
-						else if ( defined.binding != NULL ) {
-							PrintSExpTree(defined.binding, false, layer);
-							for ( int i = 0 ; i < layer ; i++ ) cout << ")" << endl;
-						} // if : symbol is a binding
-					} // else : not function
-				} // if : Symbol : find definition and function
-
-				else if ( gTreeRoot->leftToken->tokenTypeNum == FLOAT ) {
+			if ( gTreeRoot->leftToken && !gTreeRoot->rightToken && !gTreeRoot->rightNode ) {
+				if ( gTreeRoot->leftToken->tokenTypeNum == FLOAT ) {
 					cout << fixed << setprecision(3)
 							 << round(atof(gTreeRoot->leftToken->tokenName.c_str()) * 1000) / 1000 << endl;
 				} // if : float print
@@ -1494,7 +1472,7 @@ class Project {
 			} // if : only one result
 
 			else {
-				PrintSExpTree(gTreeRoot->leftNode, false, layer);
+				PrintSExpTree( gTreeRoot, false, layer );
 				for ( int i = 0 ; i < layer ; i++ ) cout << ")" << endl;
 			} // else
 		} // if
@@ -1565,56 +1543,52 @@ class Project {
 			cout << "ERROR (level of DEFINE)" << endl;
 	} // PrintErrorMessage()
 
+  void PrintEvaluateErrorMessage( int errorType, string errorMsg, TokenTree* errorNode ) {
+    int layer = 0 ;
+    cout << errorMsg ;
+    if ( errorNode != NULL ) {
+      PrintSExpTree( errorNode, false, layer );
+      for ( int i = 0 ; i < layer ; i++ ) cout << ")" << endl;
+    } // if : have to print tree
+    
+    else cout << endl ;
+  } // PrintEvaluateErrorMessage()
+  
 // ------------------Functional Function--------------------- //
 
-	void Cons( TokenTree *currentNode ) {
-		TokenTree *resultRootNode = NULL;
-		resultRootNode = new TokenTree;
-		resultRootNode->backNode = NULL;
-		InitialNode(resultRootNode);
+	TokenTree* Cons( TokenTree* currentNode ) {
+    CheckParameterNum( currentNode, 2, "cons" ) ;
+    TokenTree* resultNode = new TokenTree ;
+    TokenTree* catchNode = NULL ;
+    InitialNode( resultNode ) ;
+    
+    catchNode = EvaluateSExp( currentNode->rightNode ) ;
+    if ( catchNode->fromQuote ) resultNode->leftNode = catchNode ;
+    else if ( catchNode->leftToken ) resultNode->leftToken = catchNode->leftToken ;
+    else resultNode->leftNode = catchNode->leftNode ;
+    
+    catchNode = EvaluateSExp( currentNode->rightNode->rightNode ) ;
+    if ( catchNode->fromQuote ) resultNode->rightNode = catchNode ;
+    else if ( catchNode->leftToken ) resultNode->rightToken = catchNode->leftToken ;
+    else resultNode->rightNode = catchNode->leftNode ;
 
-		if ( currentNode->rightNode->leftNode != NULL ) {
-			resultRootNode->leftNode = currentNode->rightNode->leftNode;
-		} // if : connect left node
-
-		else if ( currentNode->rightNode->leftToken != NULL ) {
-			if ( CheckDefinition(currentNode->rightNode->leftToken->tokenName)) {
-				DefineSymbol defined = GetDefineSymbol(currentNode->rightNode->leftToken->tokenName);
-				if ( defined.binding != NULL ) resultRootNode->leftNode = defined.binding;
-				else {
-					resultRootNode->leftToken = new Token;
-					resultRootNode->leftToken->tokenName = defined.definedName;
-					resultRootNode->leftToken->tokenTypeNum = defined.tokenTypeNum;
-				} // else : define is a token
-			} // if : check if is in definition
-			else resultRootNode->leftToken = currentNode->rightNode->leftToken;
-		} // else : only left token
-
-
-		if ( currentNode->rightNode->rightNode->leftNode != NULL ) {
-			resultRootNode->rightNode = currentNode->rightNode->rightNode->leftNode;
-		} // if : connect right node
-
-		else if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
-			if ( CheckDefinition(currentNode->rightNode->rightNode->leftToken->tokenName)) {
-				DefineSymbol defined = GetDefineSymbol(currentNode->rightNode->rightNode->leftToken->tokenName);
-				if ( defined.binding != NULL ) resultRootNode->rightNode = defined.binding;
-				else {
-					resultRootNode->rightToken = new Token;
-					resultRootNode->rightToken->tokenName = defined.definedName;
-					resultRootNode->rightToken->tokenTypeNum = defined.tokenTypeNum;
-				} // else : define is a token
-			} // if : check if is in definition
-			else resultRootNode->rightToken = currentNode->rightNode->rightNode->leftToken;
-		} // else : only left token
-
-
-		ResultConnectToTree(currentNode, resultRootNode, "\0", 0, false);
-
+    return resultNode ;
 
 	}  // Cons()
+  
+  TokenTree* Quote( TokenTree *currentNode ) {
+    if ( currentNode->rightNode->leftNode ) {
+      currentNode->rightNode->leftNode->fromQuote = true ;
+      return currentNode->rightNode->leftNode  ;
+    } // if : has left node
+      
+    else {
+      currentNode->rightNode->fromQuote = true ;
+      return currentNode->rightNode  ;
+    } // else : no left node
+  } // Quote
 
-	void List( TokenTree *currentNode ) {
+	/*void List( TokenTree *currentNode ) {
 		TokenTree *resultRootNode = NULL;
 		TokenTree *resultWalkNode = NULL;
 		TokenTree *walkNode = currentNode;
@@ -1673,21 +1647,6 @@ class Project {
 		ResultConnectToTree(currentNode, resultRootNode, "\0", 0, false);
 
 	} // List()
-
-	void Quote( TokenTree *currentNode ) {
-		TokenTree *notQuoteNode = currentNode;
-		if ( currentNode->leftToken != NULL && currentNode->leftToken->tokenName == "quote" ) {
-			if ( currentNode->rightNode->leftNode != NULL ) {
-				ResultConnectToTree(currentNode, notQuoteNode->rightNode->leftNode, "\0", 0, false);
-			} // if : node
-
-			else if ( currentNode->rightNode->leftToken != NULL ) {
-				ResultConnectToTree(currentNode, NULL, notQuoteNode->rightNode->leftToken->tokenName,
-														notQuoteNode->rightNode->leftToken->tokenTypeNum, true);
-			} // if : only token
-		} // if : Find not quote node
-
-	} // Quote
 
 	void Define( TokenTree *currentNode ) {
 		DefineSymbol firstToken;
@@ -2996,47 +2955,48 @@ class Project {
 	void Clean_Env( TokenTree *currentNode ) {
 		gDefineSymbols.clear();
 		ResultConnectToTree(currentNode, NULL, "environment cleaned", NO_TYPE, false);
-	} // Clear_Env()
+	} // Clear_Env()*/
 
-	void FindCorrespondFunction( TokenTree *currentNode, string tokenName ) {
-		if ( tokenName == "cons" ) Cons(currentNode);
-		else if ( tokenName == "list" ) List(currentNode);
-		else if ( tokenName == "quote" ) Quote(currentNode);
-		else if ( tokenName == "define" ) Define(currentNode);
-		else if ( tokenName == "car" ) Car(currentNode);
-		else if ( tokenName == "cdr" ) Cdr(currentNode);
-		else if ( tokenName == "atom?" ) Is_Atom(currentNode);
-		else if ( tokenName == "pair?" ) Is_Pair(currentNode);
-		else if ( tokenName == "list?" ) Is_List(currentNode);
-		else if ( tokenName == "null?" ) Is_Null(currentNode);
-		else if ( tokenName == "integer?" ) Is_Int(currentNode);
-		else if ( tokenName == "real?" ) Is_Real(currentNode);
-		else if ( tokenName == "number?" ) Is_Num(currentNode);
-		else if ( tokenName == "string?" ) Is_Str(currentNode);
-		else if ( tokenName == "boolean?" ) Is_Bool(currentNode);
-		else if ( tokenName == "symbol?" ) Is_Symbol(currentNode);
-		else if ( tokenName == "+" ) Plus(currentNode);
-		else if ( tokenName == "-" ) Minus(currentNode);
-		else if ( tokenName == "*" ) Mult(currentNode);
-		else if ( tokenName == "/" ) Div(currentNode);
-		else if ( tokenName == "not" ) Not(currentNode);
-		else if ( tokenName == "and" ) And(currentNode);
-		else if ( tokenName == "or" ) Or(currentNode);
-		else if ( tokenName == ">" ) Greater(currentNode);
-		else if ( tokenName == ">=" ) GreaterEqual(currentNode);
-		else if ( tokenName == "<" ) Less(currentNode);
-		else if ( tokenName == "<=" ) LessEqual(currentNode);
-		else if ( tokenName == "=" ) Equal(currentNode);
-		else if ( tokenName == "string-append" ) Str_Append(currentNode);
-		else if ( tokenName == "string>?" ) Is_Str_Greater(currentNode);
-		else if ( tokenName == "string<?" ) Is_Str_Less(currentNode);
-		else if ( tokenName == "string=?" ) Is_Str_Equal(currentNode);
-		else if ( tokenName == "eqv?" ) Is_Eqv(currentNode);
-		else if ( tokenName == "equal?" ) Is_Equal(currentNode);
-		else if ( tokenName == "begin" ) Begin(currentNode);
-		else if ( tokenName == "if" ) If(currentNode);
-		else if ( tokenName == "cond" ) Cond(currentNode);
-		else if ( tokenName == "clean-environment" ) Clean_Env(currentNode);
+	TokenTree* FindCorrespondFunction( TokenTree *currentNode, string tokenName ) {
+		if ( tokenName == "cons" ) return Cons( currentNode );
+    else if ( tokenName == "quote" ) return Quote( currentNode );
+		/*else if ( tokenName == "list" ) return List(currentNode);
+		else if ( tokenName == "define" ) return Define(currentNode);
+		else if ( tokenName == "car" ) return Car(currentNode);
+		else if ( tokenName == "cdr" ) return Cdr(currentNode);
+		else if ( tokenName == "atom?" ) return Is_Atom(currentNode);
+		else if ( tokenName == "pair?" ) return Is_Pair(currentNode);
+		else if ( tokenName == "list?" ) return Is_List(currentNode);
+		else if ( tokenName == "null?" ) return Is_Null(currentNode);
+		else if ( tokenName == "integer?" ) return Is_Int(currentNode);
+		else if ( tokenName == "real?" ) return Is_Real(currentNode);
+		else if ( tokenName == "number?" ) return Is_Num(currentNode);
+		else if ( tokenName == "string?" ) return Is_Str(currentNode);
+		else if ( tokenName == "boolean?" ) return Is_Bool(currentNode);
+		else if ( tokenName == "symbol?" ) return Is_Symbol(currentNode);
+		else if ( tokenName == "+" ) return Plus(currentNode);
+		else if ( tokenName == "-" ) return Minus(currentNode);
+		else if ( tokenName == "*" ) return Mult(currentNode);
+		else if ( tokenName == "/" ) return Div(currentNode);
+		else if ( tokenName == "not" ) return Not(currentNode);
+		else if ( tokenName == "and" ) return And(currentNode);
+		else if ( tokenName == "or" ) return Or(currentNode);
+		else if ( tokenName == ">" ) return Greater(currentNode);
+		else if ( tokenName == ">=" ) return GreaterEqual(currentNode);
+		else if ( tokenName == "<" ) return Less(currentNode);
+		else if ( tokenName == "<=" ) return LessEqual(currentNode);
+		else if ( tokenName == "=" ) return Equal(currentNode);
+		else if ( tokenName == "string-append" ) return Str_Append(currentNode);
+		else if ( tokenName == "string>?" ) return Is_Str_Greater(currentNode);
+		else if ( tokenName == "string<?" ) return Is_Str_Less(currentNode);
+		else if ( tokenName == "string=?" ) return Is_Str_Equal(currentNode);
+		else if ( tokenName == "eqv?" ) return Is_Eqv(currentNode);
+		else if ( tokenName == "equal?" ) return Is_Equal(currentNode);
+		else if ( tokenName == "begin" ) return Begin(currentNode);
+		else if ( tokenName == "if" ) return If(currentNode);
+		else if ( tokenName == "cond" ) return Cond(currentNode);
+		else if ( tokenName == "clean-environment" ) return Clean_Env(currentNode);*/
+    return NULL ;
 	} // FindCorrespondFunction()
 
 
@@ -3044,10 +3004,48 @@ class Project {
 // ------------------Evaluate Function--------------------- //
 
 
+	TokenTree * EvaluateSExp( TokenTree *currentNode ) {
+    if ( currentNode->leftToken ) {
+      if ( currentNode->leftToken->tokenTypeNum == SYMBOL && !currentNode->fromQuote ) {
+        if ( CheckDefinition( currentNode->leftToken->tokenName ) ) {
+          DefineSymbol defined = GetDefineSymbol( currentNode->leftToken->tokenName ) ;
+          if ( defined.binding != NULL ) {
+            currentNode->leftToken = NULL ;
+            currentNode->leftNode = defined.binding ;
+          } // if : define is a node
+          
+          else {
+            currentNode->leftToken->tokenName = defined.definedName ;
+            currentNode->leftToken->tokenTypeNum = defined.tokenTypeNum ;
+          } // else : defined is a token
+        } // if : is in definition
+        
+        else {
+          string errorMsg = "ERROR (unbound symbol) : " + currentNode->leftToken->tokenName ;
+          throw Exception( UNBOND_ERROR, errorMsg, NULL ) ;
+        } // else : throw exception
+        
+      } // if : if SYMBOL->check definition
+    } // if : left token
+    
+    else {
+      CheckNonList( currentNode->leftNode ) ;
 
-	void EvaluateSExp( TokenTree *currentNode ) {
-		
+      if ( currentNode->leftNode->needToBePrimitive == true ) {
+        if ( IsFunction( currentNode->leftNode->leftToken->tokenName ) ) {
+          currentNode = FindCorrespondFunction( currentNode->leftNode, currentNode->leftNode->leftToken->tokenName) ;
+        } // if : check is Function
+        
+        else {
+          string errorMsg = "ERROR (attempt to apply non-function) : " + currentNode->leftNode->leftToken->tokenName ;
+          throw Exception( NO_APPLY_ERROR, errorMsg, NULL ) ;
+        } // else : no apply error
+      } // if
+      
+      
+    } // else left node
 
+    return currentNode;
 	} // EvaluateSExp()
 
 }; // Project
@@ -3070,13 +3068,15 @@ int main() {
 		if ( project.GetToken()) {
 			if ( project.ReadSExp() ) {
 				if ( !project.ExitDetect()) {
+          
 					try {
-						project.EvaluateSExp( gTreeRoot ) ;
+						gTreeRoot = project.EvaluateSExp( gTreeRoot ) ;
 						project.PrintFunctionMsg() ;
 					} // try
 					catch( Exception e ) {
-						project.PrintErrorMessage();
+						project.PrintEvaluateErrorMessage( e.mErrorType, e.mErrorMsg, e.mErrorNode ) ;
 					} // catch
+          
 					project.ClearSpaceAndOneLine();
 				} // if
 			} // if
