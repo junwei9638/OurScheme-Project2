@@ -22,8 +22,8 @@ struct Token {
 }; // TokenType
 
 struct TokenTree {
-	Token *leftToken;
-	Token *rightToken;
+  string tokenName ;
+  int tokenType ;
 	TokenTree *leftNode;
 	TokenTree *rightNode;
 	TokenTree *backNode;
@@ -107,10 +107,10 @@ public:
 
 	void InitialNode( TokenTree *currentNode ) {
 		currentNode->leftNode = NULL;
-		currentNode->leftToken = NULL;
 		currentNode->rightNode = NULL;
-		currentNode->rightToken = NULL;
     currentNode->fromQuote = false ;
+    currentNode->tokenType = NO_TYPE ;
+    currentNode->tokenName = "\0" ;
 	} // InitialNode()
 
 	void InitialToken( Token *token ) {
@@ -250,27 +250,12 @@ public:
 		return false;
 	} // CheckDefinition()
 
-	bool CheckRightToken( TokenTree *currentNode ) {
-
-		if ( currentNode != NULL ) {
-			if ( currentNode->rightToken != NULL ) return true;
-
-			if ( CheckRightToken(currentNode->leftNode)) return true;
-			if ( CheckRightToken(currentNode->rightNode)) return true;
-		} // if : current node judge
-
-		return false;
-	}  // FindRightToken()
 
   void CheckNonList( TokenTree* currentNode ) {
-    if ( currentNode->rightToken ) {
-      string errorMsg = "ERROR (non-list) : ";
-      throw Exception( NON_LIST_ERROR, errorMsg.c_str(), currentNode ) ;
-    } // if : nonlist
     
     while ( currentNode->rightNode ) {
       currentNode = currentNode->rightNode ;
-      if ( currentNode->rightToken ) {
+      if ( currentNode->rightNode->tokenName != "\0" ) {
         string errorMsg = "ERROR (non-list) : ";
         throw Exception( NON_LIST_ERROR, errorMsg.c_str(), currentNode ) ;
       } // if : nonlist
@@ -1328,21 +1313,21 @@ public:
 
 
 	void CreateTree( TokenTree *currentNode, vector<Token> &Tokens, bool isRight ) {
-		if ( AtomJudge(Tokens.front().tokenTypeNum) || Tokens.front().tokenTypeNum == QUOTE ) {
+		if ( AtomJudge( Tokens.front().tokenTypeNum ) || Tokens.front().tokenTypeNum == QUOTE ) {
 			if ( isRight ) {
-				currentNode->rightToken = new Token;
-				InitialToken(currentNode->rightToken);
-				currentNode->rightToken->tokenName = Tokens.front().tokenName;
-				currentNode->rightToken->tokenTypeNum = Tokens.front().tokenTypeNum;
+				currentNode->rightNode = new TokenTree;
+				InitialNode( currentNode->rightNode );
+				currentNode->rightNode->tokenName = Tokens.front().tokenName;
+				currentNode->rightNode->tokenType = Tokens.front().tokenTypeNum;
 				Tokens.erase(Tokens.begin());
 			} // if : isRight
 
 			else {
-				currentNode->leftToken = new Token;
-				InitialToken(currentNode->leftToken);
-				currentNode->leftToken->tokenName = Tokens.front().tokenName;
-				currentNode->leftToken->tokenTypeNum = Tokens.front().tokenTypeNum;
-				Tokens.erase(Tokens.begin());
+        currentNode->leftNode = new TokenTree;
+        InitialNode( currentNode->leftNode );
+        currentNode->leftNode->tokenName = Tokens.front().tokenName;
+        currentNode->leftNode->tokenType = Tokens.front().tokenTypeNum;
+        Tokens.erase(Tokens.begin());
 			} // if : isLeft
 		} // if
 
@@ -1417,56 +1402,59 @@ public:
 
 	void PrintSExpTree( TokenTree *currentNode, bool isRightNode, int &layer ) {
 		static bool lineReturn = false;
-		if ( !isRightNode ) {
+		if ( !isRightNode && currentNode->tokenName == "\0" ) {
 			cout << "( ";
 			lineReturn = false;
 			layer++;
 		} // if
 
 
-		if ( lineReturn ) {
+		if ( lineReturn && currentNode->tokenName == "\0" ) {
 			for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
 		} // if
 
-		if ( currentNode->leftToken != NULL ) {
-			cout << currentNode->leftToken->tokenName << endl;
-			lineReturn = true;
+		if ( currentNode->tokenName != "\0" ) {
+      if ( !isRightNode ) {
+        cout << currentNode->tokenName << endl;
+        lineReturn = true;
+      } // if : leftNode
+      
+      else if ( currentNode->tokenType != NIL ) {
+        for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
+        cout << "." << endl;
+        for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
+        cout << currentNode->tokenName << endl;
+      } // else
 		} // if
 
-		if ( currentNode->leftNode ) PrintSExpTree(currentNode->leftNode, false, layer);
+		if ( currentNode->leftNode ) PrintSExpTree( currentNode->leftNode, false, layer);
 
-		if ( currentNode->rightNode ) PrintSExpTree(currentNode->rightNode, true, layer);
+		if ( currentNode->rightNode ) PrintSExpTree( currentNode->rightNode, true, layer);
 
-		if ( currentNode->rightToken != NULL && currentNode->rightToken->tokenTypeNum != NIL ) {
-			for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
-			cout << "." << endl;
-			for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
-			cout << currentNode->rightToken->tokenName << endl;
-			lineReturn = true;
-		} // if
-
-		if ( layer > 1 ) {
+		if ( layer > 1 && currentNode->tokenName == "\0" &&
+        ( currentNode->rightNode == NULL || ( currentNode->leftNode->tokenName != "\0" && currentNode->rightNode->tokenName != "\0" ) ) ) {
 			lineReturn = true;
 			layer--;
 			for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
 			cout << ")" << endl;
-		} // if
+		} // if : print right paren
+    
 	} // PrintSExpTree()
 
 
 	void PrintFunctionMsg() {
 		int layer = 0;
 		if ( gTreeRoot != NULL ) {
-			if ( gTreeRoot->leftToken && !gTreeRoot->rightToken && !gTreeRoot->rightNode ) {
-				if ( gTreeRoot->leftToken->tokenTypeNum == FLOAT ) {
+			if ( gTreeRoot->leftNode && gTreeRoot->leftNode->tokenName != "\0" && !gTreeRoot->rightNode ) {
+				if ( gTreeRoot->leftNode->tokenType == FLOAT ) {
 					cout << fixed << setprecision(3)
-							 << round(atof(gTreeRoot->leftToken->tokenName.c_str()) * 1000) / 1000 << endl;
+							 << round(atof(gTreeRoot->leftNode->tokenName.c_str()) * 1000) / 1000 << endl;
 				} // if : float print
-				else cout << gTreeRoot->leftToken->tokenName << endl;
+				else cout << gTreeRoot->leftNode->tokenName << endl;
 			} // if : only one result
 
 			else {
-				PrintSExpTree( gTreeRoot, false, layer );
+				PrintSExpTree( gTreeRoot->leftNode, false, layer );
 				for ( int i = 0 ; i < layer ; i++ ) cout << ")" << endl;
 			} // else
 		} // if
@@ -1550,7 +1538,7 @@ public:
   
 // ------------------Functional Function--------------------- //
 
-	TokenTree* Cons( TokenTree* currentNode ) {
+	/*TokenTree* Cons( TokenTree* currentNode ) {
     CheckParameterNum( currentNode, 2, "cons" ) ;
     TokenTree* resultNode = new TokenTree ;
     TokenTree* catchNode = NULL ;
@@ -2878,7 +2866,7 @@ public:
 	} // Clear_Env()*/
 
 	TokenTree* FindCorrespondFunction( TokenTree *currentNode, string tokenName ) {
-		if ( tokenName == "cons" ) return Cons( currentNode );
+		/*if ( tokenName == "cons" ) return Cons( currentNode );
     else if ( tokenName == "quote" ) return Quote( currentNode );
 		else if ( tokenName == "define" ) return Define(currentNode);
 		/*else if ( tokenName == "list" ) return List(currentNode);
@@ -2924,7 +2912,7 @@ public:
 // ------------------Evaluate Function--------------------- //
 
 
-	TokenTree * EvaluateSExp( TokenTree *currentNode ) {
+	/*TokenTree * EvaluateSExp( TokenTree *currentNode ) {
     if ( currentNode->leftToken ) {
       if ( currentNode->leftToken->tokenTypeNum == SYMBOL && !currentNode->fromQuote ) {
         if ( CheckDefinition( currentNode->leftToken->tokenName ) ) {
@@ -2977,7 +2965,7 @@ public:
     } // else left node
 
     return currentNode;
-	} // EvaluateSExp()
+	} // EvaluateSExp()*/
 
 }; // Project
 
@@ -3001,7 +2989,7 @@ int main() {
 				if ( !project.ExitDetect()) {
           
 					try {
-						gTreeRoot = project.EvaluateSExp( gTreeRoot ) ;
+						//gTreeRoot = project.EvaluateSExp( gTreeRoot ) ;
 						project.PrintFunctionMsg() ;
 					} // try
 					catch( Exception e ) {
