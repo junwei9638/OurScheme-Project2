@@ -33,8 +33,6 @@ struct TokenTree {
 
 struct DefineSymbol {
 	string symbolName;
-  string definedName;
-  int tokenTypeNum ;
 	TokenTree * binding;
 }; // DefineSymbol Symbol
 
@@ -179,22 +177,18 @@ public:
 	} // GlobalVariableReset()
 
 
-	void InitialDefineStruct( DefineSymbol &define ) {
-		define.symbolName = "\0";
-		define.definedName = "\0";
-		define.tokenTypeNum = NO_TYPE;
-		define.binding = NULL;
+	void InitialDefineStruct( DefineSymbol * define ) {
+		define->symbolName = "\0";
+		define->binding = NULL;
 	} // InitialDefineStruct()
 
-	DefineSymbol GetDefineSymbol( string tokenName ) {
-		DefineSymbol temp;
-		InitialDefineStruct(temp);
+	DefineSymbol* GetDefineSymbol( string tokenName ) {
+		DefineSymbol* temp = new DefineSymbol;
+		InitialDefineStruct( temp );
 		for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
 			if ( tokenName == gDefineSymbols[i].symbolName ) {
-				temp.symbolName = gDefineSymbols[i].symbolName;
-				temp.definedName = gDefineSymbols[i].definedName;
-				temp.tokenTypeNum = gDefineSymbols[i].tokenTypeNum;
-				temp.binding = gDefineSymbols[i].binding;
+				temp->symbolName = gDefineSymbols[i].symbolName;
+				temp->binding = gDefineSymbols[i].binding;
 			} // if
 		} // for
 
@@ -1576,7 +1570,7 @@ public:
 
 	}  // Cons()
   
-  TokenTree* Quote( TokenTree *currentNode ) {
+  TokenTree* Quote( TokenTree* currentNode ) {
     if ( currentNode->rightNode->leftNode ) {
       currentNode->rightNode->leftNode->fromQuote = true ;
       return currentNode->rightNode->leftNode  ;
@@ -1587,6 +1581,14 @@ public:
       return currentNode->rightNode  ;
     } // else : no left node
   } // Quote
+
+	TokenTree* Define( TokenTree* currentNode ) {
+		TokenTree* resultNode = new TokenTree ;
+		InitialNode( resultNode ) ;
+
+
+		return resultNode ;
+	} // Define()
 
 	/*void List( TokenTree *currentNode ) {
 		TokenTree *resultRootNode = NULL;
@@ -1647,88 +1649,6 @@ public:
 		ResultConnectToTree(currentNode, resultRootNode, "\0", 0, false);
 
 	} // List()
-
-	void Define( TokenTree *currentNode ) {
-		DefineSymbol firstToken;
-		DefineSymbol secondToken;
-		InitialDefineStruct(firstToken);
-		InitialDefineStruct(secondToken);
-
-		firstToken.symbolName = currentNode->rightNode->leftToken->tokenName;
-
-		// ------------- second symbol double defind ----------------//
-		if ( currentNode->rightNode->rightNode->leftToken != NULL &&
-				 currentNode->rightNode->rightNode->leftToken->tokenTypeNum == SYMBOL ) {
-			secondToken.symbolName = currentNode->rightNode->rightNode->leftToken->tokenName;
-			for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
-				if ( secondToken.symbolName == gDefineSymbols[i].symbolName ) {
-					for ( int j = 0 ; j < gDefineSymbols.size() ; j++ ) {
-						if ( firstToken.symbolName == gDefineSymbols[j].symbolName ) {
-							if ( gDefineSymbols[i].binding != NULL ) {
-								gDefineSymbols[j].binding = gDefineSymbols[i].binding;
-								gDefineSymbols[j].definedName = "\0";
-							} // if : second token has binding in definition
-
-							else {
-								gDefineSymbols[j].binding = NULL;
-								gDefineSymbols[j].definedName = gDefineSymbols[i].definedName;
-							} // else : if : second token has token in definition
-
-							ResultConnectToTree(currentNode, NULL, firstToken.symbolName + " defined", NO_TYPE, false);
-							return;
-						} // if : first same definition
-					} // for : first same definition
-
-					if ( gDefineSymbols[i].binding != NULL ) {
-						firstToken.binding = gDefineSymbols[i].binding;
-					} // if :second defined is a binding
-					else {
-						firstToken.definedName = gDefineSymbols[i].definedName;
-						firstToken.tokenTypeNum = gDefineSymbols[i].tokenTypeNum;
-					} // else : second defined is a token
-
-					gDefineSymbols.push_back(firstToken);
-					ResultConnectToTree(currentNode, NULL, firstToken.symbolName + " defined", NO_TYPE, false);
-					return;
-				} // if : second same definition
-			} // second token same definition
-		} // if : second token is a symbol
-
-
-		// ----------------- find same definition --------------//
-		for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
-			if ( firstToken.symbolName == gDefineSymbols[i].symbolName ) {
-				if ( currentNode->rightNode->rightNode->leftNode != NULL ) {
-					gDefineSymbols[i].binding = currentNode->rightNode->rightNode->leftNode;
-					gDefineSymbols[i].definedName = "\0";
-				} // if : same definition is a binding
-				else if ( currentNode->rightNode->rightNode->leftToken != NULL ) {
-					gDefineSymbols[i].binding = NULL;
-					gDefineSymbols[i].definedName = currentNode->rightNode->rightNode->leftToken->tokenName;
-				} // if : same definition is a Token
-
-				ResultConnectToTree(currentNode, NULL, firstToken.symbolName + " defined", NO_TYPE, false);
-				return;
-			} // if : same definition
-		} // for : find same definition
-
-		//------------------no define ever-------------//
-		if ( currentNode->rightNode->rightNode->leftNode != NULL ) {
-			firstToken.binding = currentNode->rightNode->rightNode->leftNode;
-		} // if : define a function
-
-		else if ( currentNode->rightNode->rightNode->leftToken->tokenName != "\0" ) {
-			firstToken.definedName = currentNode->rightNode->rightNode->leftToken->tokenName;
-			firstToken.tokenTypeNum = currentNode->rightNode->rightNode->leftToken->tokenTypeNum;
-			firstToken.binding = NULL;
-		} // if : no function and second parameter is a token
-
-		gDefineSymbols.push_back(firstToken);
-
-		//----------- connect to tree -----------//
-		ResultConnectToTree(currentNode, NULL, firstToken.symbolName + " defined", NO_TYPE, false);
-
-	} // Define()
 
 	void Car( TokenTree *currentNode ) {
 		string resultTokenName = "\0";
@@ -2960,8 +2880,8 @@ public:
 	TokenTree* FindCorrespondFunction( TokenTree *currentNode, string tokenName ) {
 		if ( tokenName == "cons" ) return Cons( currentNode );
     else if ( tokenName == "quote" ) return Quote( currentNode );
-		/*else if ( tokenName == "list" ) return List(currentNode);
 		else if ( tokenName == "define" ) return Define(currentNode);
+		/*else if ( tokenName == "list" ) return List(currentNode);
 		else if ( tokenName == "car" ) return Car(currentNode);
 		else if ( tokenName == "cdr" ) return Cdr(currentNode);
 		else if ( tokenName == "atom?" ) return Is_Atom(currentNode);
@@ -3008,16 +2928,8 @@ public:
     if ( currentNode->leftToken ) {
       if ( currentNode->leftToken->tokenTypeNum == SYMBOL && !currentNode->fromQuote ) {
         if ( CheckDefinition( currentNode->leftToken->tokenName ) ) {
-          DefineSymbol defined = GetDefineSymbol( currentNode->leftToken->tokenName ) ;
-          if ( defined.binding != NULL ) {
-            currentNode->leftToken = NULL ;
-            currentNode->leftNode = defined.binding ;
-          } // if : define is a node
-          
-          else {
-            currentNode->leftToken->tokenName = defined.definedName ;
-            currentNode->leftToken->tokenTypeNum = defined.tokenTypeNum ;
-          } // else : defined is a token
+          DefineSymbol * defined = GetDefineSymbol( currentNode->leftToken->tokenName ) ;
+          currentNode->leftToken = defined->binding->leftToken ;
         } // if : is in definition
         
         else {
@@ -3032,6 +2944,25 @@ public:
       CheckNonList( currentNode->leftNode ) ;
 
       if ( currentNode->leftNode->needToBePrimitive == true ) {
+      	if ( currentNode->leftNode->leftToken->tokenTypeNum == SYMBOL ) {
+					if ( CheckDefinition( currentNode->leftNode->leftToken->tokenName ) ) {
+						DefineSymbol * defined = GetDefineSymbol( currentNode->leftNode->leftToken->tokenName ) ;
+						if ( defined->binding->leftToken && !defined->binding->rightNode && !defined->binding->rightToken ) {
+							currentNode->leftNode->leftToken = defined->binding->leftToken ;
+						} // if : define is a token
+
+						else {
+							string errorMsg = "ERROR (attempt to apply non-function) : " ;
+							throw Exception( NO_APPLY_ERROR, errorMsg.c_str(), defined->binding ) ;
+						} // else : define is a node-> error
+					} // if : is in definition
+
+					else {
+						string errorMsg = "ERROR (unbound symbol) : " + currentNode->leftNode->leftToken->tokenName ;
+						throw Exception( UNBOND_ERROR, errorMsg.c_str(), NULL ) ;
+					} // else : throw exception
+      	} // if : if is SYMBOL　
+
         if ( IsFunction( currentNode->leftNode->leftToken->tokenName ) ) {
           currentNode = FindCorrespondFunction( currentNode->leftNode, currentNode->leftNode->leftToken->tokenName) ;
         } // if : check is Function
