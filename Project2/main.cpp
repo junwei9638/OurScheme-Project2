@@ -1528,11 +1528,8 @@ public:
     CheckParameterNum( currentNode, 2, "cons" ) ;
     TokenTree* resultNode = new TokenTree ;
     InitialNode( resultNode ) ;
-    
     resultNode->leftNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
-    
     resultNode->rightNode = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
-
     return resultNode ;
 
 	}  // Cons()
@@ -1544,9 +1541,17 @@ public:
 
 	TokenTree* Define( TokenTree* currentNode ) {
 		TokenTree* resultNode = new TokenTree ;
+		DefineSymbol* defined = NULL ;
 		InitialNode( resultNode ) ;
+		if ( currentNode->rightNode->leftNode->tokenType != SYMBOL || IsFunction(currentNode->rightNode->leftNode->tokenName ) ) {
+			string errorMsg = "ERROR (DEFINE format) : " ;
+			throw Exception( FORMAT_ERROR, errorMsg.c_str(), currentNode ) ;
+		} // if : first token is not symbol or is a function
 
-    
+		defined->symbolName = currentNode->rightNode->leftNode->tokenName ;
+		defined->binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+
+    gDefineSymbols.push_back()
     
 		return resultNode ;
 	} // Define()
