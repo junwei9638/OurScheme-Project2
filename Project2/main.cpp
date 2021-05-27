@@ -1202,7 +1202,7 @@ public:
 
 
 	bool SyntaxChecker() {
-		if ( AtomJudge(gTokens.back().tokenTypeNum)) {
+		if ( AtomJudge(gTokens.back().tokenTypeNum) || gTokens.back().tokenName == "quote" ) {
 			return true;
 		} // if
 
@@ -1289,20 +1289,6 @@ public:
 			else return false;
 		} // if
 
-		else if ( gTokens.back().tokenTypeNum == QUOTE && gTokens.back().tokenName == "quote"  ) {
-			// cout << "Quote " ;
-
-			if ( GetToken()) {
-				if ( SyntaxChecker()) return true;
-				else {
-					SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-											gTokens.back().tokenLine, gTokens.back().tokenColumn);
-					return false;
-				} // else
-			} // if
-
-			else return false;
-		} // if
 
 		SetErrorMsg(NOT_S_EXP_ERROR, gTokens.back().tokenName,
 								gTokens.back().tokenLine, gTokens.back().tokenColumn);
