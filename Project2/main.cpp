@@ -177,18 +177,18 @@ public:
 	} // GlobalVariableReset()
 
 
-	void InitialDefineStruct( DefineSymbol * define ) {
-		define->symbolName = "\0";
-		define->binding = NULL;
+	void InitialDefineStruct( DefineSymbol  define ) {
+		define.symbolName = "\0";
+		define.binding = NULL;
 	} // InitialDefineStruct()
 
-	DefineSymbol* GetDefineSymbol( string tokenName ) {
-		DefineSymbol* temp = new DefineSymbol;
+	DefineSymbol GetDefineSymbol( string tokenName ) {
+		DefineSymbol temp ;
 		InitialDefineStruct( temp );
 		for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
 			if ( tokenName == gDefineSymbols[i].symbolName ) {
-				temp->symbolName = gDefineSymbols[i].symbolName;
-				temp->binding = gDefineSymbols[i].binding;
+				temp.symbolName = gDefineSymbols[i].symbolName;
+				temp.binding = gDefineSymbols[i].binding;
 			} // if
 		} // for
 
@@ -1541,18 +1541,24 @@ public:
 
 	TokenTree* Define( TokenTree* currentNode ) {
 		TokenTree* resultNode = new TokenTree ;
-		DefineSymbol* defined = NULL ;
+		DefineSymbol defined  ;
 		InitialNode( resultNode ) ;
 		if ( currentNode->rightNode->leftNode->tokenType != SYMBOL || IsFunction(currentNode->rightNode->leftNode->tokenName ) ) {
 			string errorMsg = "ERROR (DEFINE format) : " ;
 			throw Exception( FORMAT_ERROR, errorMsg.c_str(), currentNode ) ;
 		} // if : first token is not symbol or is a function
 
-		defined->symbolName = currentNode->rightNode->leftNode->tokenName ;
-		defined->binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+		if ( currentNode != gTreeRoot ) {
+			string errorMsg = "ERROR (level of DEFINE)" ;
+			throw Exception( FORMAT_ERROR, errorMsg.c_str(), NULL ) ;
+		} // if : first token is not symbol or is a function
 
-    gDefineSymbols.push_back()
-    
+		defined.symbolName = currentNode->rightNode->leftNode->tokenName ;
+		defined.binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+
+    gDefineSymbols.push_back( defined ) ;
+
+    resultNode->tokenName = currentNode->rightNode->leftNode->tokenName + " defined" ;
 		return resultNode ;
 	} // Define()
 
@@ -2894,8 +2900,8 @@ public:
     if ( currentNode->tokenName != "\0" ) {
       if ( currentNode->tokenType == SYMBOL && !currentNode->fromQuote ) {
         if ( CheckDefinition( currentNode->tokenName ) ) {
-          DefineSymbol * defined = GetDefineSymbol( currentNode->tokenName ) ;
-          currentNode = defined->binding ;
+          DefineSymbol defined = GetDefineSymbol( currentNode->tokenName ) ;
+          currentNode = defined.binding ;
         } // if : is in definition
         
         else {
@@ -2912,14 +2918,14 @@ public:
       if ( currentNode->needToBePrimitive == true ) {
       	if ( currentNode->leftNode->tokenType == SYMBOL ) {
 					if ( CheckDefinition( currentNode->leftNode->tokenName ) ) {
-						DefineSymbol * defined = GetDefineSymbol( currentNode->leftNode->tokenName ) ;
-						if ( defined->binding->tokenName != "\0" ) {
-							currentNode->leftNode = defined->binding ;
+						DefineSymbol defined = GetDefineSymbol( currentNode->leftNode->tokenName ) ;
+						if ( defined.binding->tokenName != "\0" ) {
+							currentNode->leftNode = defined.binding ;
 						} // if : define is a token
 
 						else {
 							string errorMsg = "ERROR (attempt to apply non-function) : " ;
-							throw Exception( NO_APPLY_ERROR, errorMsg.c_str(), defined->binding ) ;
+							throw Exception( NO_APPLY_ERROR, errorMsg.c_str(), defined.binding ) ;
 						} // else : define is a node-> error
 					} // if : is in definition
 
