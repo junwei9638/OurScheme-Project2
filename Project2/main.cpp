@@ -1289,7 +1289,7 @@ public:
 			else return false;
 		} // if
 
-		else if ( gTokens.back().tokenTypeNum == QUOTE && gTokens.back().tokenName == "quote" ) {
+		else if ( gTokens.back().tokenTypeNum == QUOTE && gTokens.back().tokenName == "quote"  ) {
 			// cout << "Quote " ;
 
 			if ( GetToken()) {
