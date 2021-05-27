@@ -1289,7 +1289,6 @@ public:
 			else return false;
 		} // if
 
-
 		SetErrorMsg(NOT_S_EXP_ERROR, gTokens.back().tokenName,
 								gTokens.back().tokenLine, gTokens.back().tokenColumn);
 		return false;
