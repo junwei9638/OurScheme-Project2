@@ -16,8 +16,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "248"
             endingLineNumber = "248"
-            landmarkName = "CheckNonList(currentNode)"
-            landmarkType = "7">
+            landmarkName = "Project"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -32,7 +32,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "812"
             endingLineNumber = "812"
-            landmarkName = "PrintErrorMessage()"
+            landmarkName = "PrintFunctionMsg()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -48,7 +48,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1988"
             endingLineNumber = "1988"
-            landmarkName = "EvaluateSExp(currentNode)"
+            landmarkName = "FindCorrespondFunction(currentNode, tokenName)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -88,7 +88,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "C28B5E4B-3378-4BE3-914C-2A95CFC4C619"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Project2/main.cpp"
@@ -96,7 +96,23 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1716"
             endingLineNumber = "1716"
-            landmarkName = "Str_Append(currentNode)"
+            landmarkName = "Equal(currentNode)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "CC932E01-10F2-4026-81D0-6094FC185652"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Project2/main.cpp"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "2023"
+            endingLineNumber = "2023"
+            landmarkName = "EvaluateSExp(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

@@ -2018,8 +2018,13 @@ class Project {
     } // if : left token
     
     else {
-      if ( currentNode->leftNode->tokenName == "\0" )
-        currentNode->leftNode = EvaluateSExp( currentNode->leftNode ) ;
+      if ( currentNode->leftNode->tokenName == "\0" ) {
+        TokenTree* judgeNode = NULL ;
+        judgeNode = EvaluateSExp( currentNode->leftNode ) ;
+        
+        if ( IsFunction( judgeNode->tokenName ) ) currentNode->leftNode = judgeNode ;
+        else return judgeNode;
+      } // if : duoble paren
 
       CheckNonList( currentNode ) ;
 
