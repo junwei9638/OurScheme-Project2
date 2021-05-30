@@ -80,20 +80,19 @@ int gErrorLine = 0;
 int gErrorColumn = 0;
 
 class Exception : public exception {
- public:
+  public:
   int mErrorType ;
   TokenTree* mErrorNode ;
 
-  Exception( int type, TokenTree * errorNode ) {
+  Exception( int type ) {
     mErrorType = type ;
-    mErrorNode = errorNode ;
   }  // Exception()
   
 }; // ErrorHandling class
 
 class Project {
-public:
-// ------------------Setting Function--------------------- //
+  public:
+  // ------------------Setting Function--------------------- //
   void InitialLineColumn() {
     gLine = 1;
     gColumn = 0;
@@ -130,7 +129,7 @@ public:
     } // if
 
     if ( peek == ';' ) {                     // comment case
-      while ( peek != '\n' && peek != EOF) {
+      while ( peek != '\n' && peek != EOF ) {
         cin.get();
         peek = cin.peek();
       } // while
@@ -143,7 +142,7 @@ public:
 
   void ClearInput() {
     char peek = cin.peek();
-    while ( peek != '\n' && peek != EOF) {
+    while ( peek != '\n' && peek != EOF ) {
       cin.get();
       peek = cin.peek();
     } // while
@@ -167,7 +166,7 @@ public:
     gErrorMsgType = NO_ERROR;
     gErrorMsgName = "\0";
     gAtomType = 0;
-  } // GlobalVariableReset()
+  } // GlobalVariableInitial()
 
 
   void InitialDefineStruct( DefineSymbol  define ) {
@@ -188,7 +187,7 @@ public:
     return temp;
   } // GetDefineSymbol()
 
-// ------------------JudgeMent Function--------------------- //
+  // ------------------JudgeMent Function--------------------- //
   bool ExitDetect() {
     int nilExit = -1;
     int exitNil = -1;
@@ -197,8 +196,8 @@ public:
     for ( int i = 0 ; i < gTokens.size() ; i++ )
       tokenString += gTokens[i].tokenName;
 
-    nilExit = (int) tokenString.find("(nil.exit)");
-    exitNil = (int) tokenString.find("(exit.nil)");
+    nilExit = ( int ) tokenString.find( "(nil.exit)" );
+    exitNil = ( int ) tokenString.find( "(exit.nil)" );
 
     if ( tokenString == "(exit)" || nilExit != -1 || exitNil != -1 ) {
       gIsEnd = true;
@@ -216,19 +215,22 @@ public:
       return true;
 
     else return false;
-  } // IsAtom()
+  } // AtomJudge()
 
   bool IsFunction( string tokenName ) {
     if ( tokenName == "cons" || tokenName == "list" || tokenName == "quote" || tokenName == "define" ||
          tokenName == "car" || tokenName == "cdr" || tokenName == "atom?" || tokenName == "pair?" ||
-         tokenName == "list?" || tokenName == "null?" || tokenName == "integer?" || tokenName == "real?" ||
+         tokenName == "list?" || tokenName == "null?" ||
+         tokenName == "integer?" || tokenName == "real?" ||
          tokenName == "number?" || tokenName == "string?" || tokenName == "boolean?" ||
          tokenName == "symbol?" ||
-         tokenName == "+" || tokenName == "-" || tokenName == "*" || tokenName == "/" || tokenName == "not" ||
+         tokenName == "+" || tokenName == "-" || tokenName == "*" ||
+         tokenName == "/" || tokenName == "not" ||
          tokenName == "and" || tokenName == "or" || tokenName == ">" || tokenName == ">=" ||
          tokenName == "<" ||
-         tokenName == "<=" || tokenName == "=" || tokenName == "string-append" || tokenName == "string>?" ||
-         tokenName == "string<?" || tokenName == "string=?" || tokenName == "eqv?" || tokenName == "equal?" ||
+         tokenName == "<=" || tokenName == "=" || tokenName == "string-append" ||
+         tokenName == "string>?" || tokenName == "string<?" || tokenName == "string=?" ||
+         tokenName == "eqv?" || tokenName == "equal?" ||
          tokenName == "begin" || tokenName == "if" || tokenName == "cond" ||
          tokenName == "clean-environment" || tokenName == "exit" )
       return true;
@@ -250,7 +252,8 @@ public:
       walkNode = walkNode->rightNode ;
       if ( walkNode->tokenName != "\0" ) {
         cout << "ERROR (non-list) : ";
-        throw Exception( NON_LIST_ERROR, currentNode ) ;
+        PrintEvaluateErrorMessage( currentNode ) ;
+        throw Exception( NON_LIST_ERROR ) ;
       } // if : nonlist
     } // while : check right token
     
@@ -267,29 +270,31 @@ public:
     if ( num != needNum ) {
       if ( functionName == "define" ) {
         cout << "ERROR (DEFINE format) : " ;
-        throw Exception( PARAMETER_NUM_ERROR, currentNode ) ;
+        PrintEvaluateErrorMessage( currentNode ) ;
+        throw Exception( PARAMETER_NUM_ERROR ) ;
       } // if : define format
       
       else if ( functionName == "+" || functionName == "-" || functionName == "*" || functionName == "/" ||
-           functionName == "and" || functionName == "or" || functionName == ">" || functionName == ">=" ||
-           functionName == "<" || functionName == "<=" || functionName == "=" ||
-           functionName == "string-append" || functionName == "string>?" || functionName == "string<?" ||
-           functionName == "string=?" ) {
+                functionName == "and" || functionName == "or" ||
+                functionName == ">" || functionName == ">=" ||
+                functionName == "<" || functionName == "<=" || functionName == "=" ||
+                functionName == "string-append" || functionName == "string>?" ||
+                functionName == "string<?" || functionName == "string=?" ) {
         if ( num < needNum ) {
           cout << "ERROR (incorrect number of arguments) : " + functionName ;
-          throw Exception( PARAMETER_NUM_ERROR, NULL ) ;
+          throw Exception( PARAMETER_NUM_ERROR ) ;
         } // if : not >= 2
       } // if : define format
       
       else {
         cout << "ERROR (incorrect number of arguments) : " + functionName ;
-        throw Exception( PARAMETER_NUM_ERROR, NULL ) ;
+        throw Exception( PARAMETER_NUM_ERROR ) ;
       } // else
     } // if : throw exception
     
-  } // CheckParameterNum( )
+  } // CheckParameterNum()
 
-// ------------------Get Token--------------------- //
+  // ------------------Get Token--------------------- //
 
   string StringProcess() {
     string inputString = "\0";
@@ -300,7 +305,7 @@ public:
     char peek = cin.peek();
     gAtomType = STRING;
 
-    while ( closeQuote == false && peek != '\n' && peek != EOF) {
+    while ( closeQuote == false && peek != '\n' && peek != EOF ) {
 
       ch = cin.get();
       gColumn++;
@@ -343,9 +348,9 @@ public:
 
     if ( closeQuote == false ) {
       if ( peek == EOF )
-        SetErrorMsg( EOF_ERROR, "\"",  0, 0);
+        SetErrorMsg( EOF_ERROR, "\"",  0, 0 );
       else if ( peek == '\n' )
-        SetErrorMsg( CLOSE_ERROR, "\"",  gLine, gColumn + 1);
+        SetErrorMsg( CLOSE_ERROR, "\"",  gLine, gColumn + 1 );
       return "\0";
     } // if                                        // no closing quote
 
@@ -354,11 +359,11 @@ public:
 
   string NumProcess( string atomExp ) {
 
-    if ( atomExp[0] == '+' ) atomExp = atomExp.substr(1, atomExp.length() - 1);  // '+' case
+    if ( atomExp[0] == '+' ) atomExp = atomExp.substr( 1, atomExp.length() - 1 );  // '+' case
     if ( atomExp[0] == '.' ) atomExp = "0" + atomExp;                             // .xxx case
-    if ( atomExp[0] == '-' && atomExp[1] == '.' ) atomExp.insert(1, "0");        // -.xxx case
+    if ( atomExp[0] == '-' && atomExp[1] == '.' ) atomExp.insert( 1, "0" );        // -.xxx case
 
-    int dot = (int) atomExp.find('.');
+    int dot = ( int ) atomExp.find( '.' );
     if ( dot != atomExp.npos ) gAtomType = FLOAT;
     else gAtomType = INT;
     return atomExp;
@@ -393,10 +398,10 @@ public:
     else {
 
       for ( int i = 0 ; i < atomExp.length() ; i++ ) {
-        if (((int) atomExp[i] >= 48 && (int) atomExp[i] <= 57) ||
-            atomExp[i] == '+' || atomExp[i] == '-' || atomExp[i] == '.' ) {
+        if ( ( ( int ) atomExp[i] >= 48 && ( int ) atomExp[i] <= 57 ) ||
+             atomExp[i] == '+' || atomExp[i] == '-' || atomExp[i] == '.' ) {
           if ( atomExp[i] == '+' || atomExp[i] == '-' ) signBit++;
-          if ((int) atomExp[i] >= 48 && (int) atomExp[i] <= 57 ) digitBit++;
+          if ( ( int ) atomExp[i] >= 48 && ( int ) atomExp[i] <= 57 ) digitBit++;
           if ( atomExp[i] == '.' ) dotBit++;
           isNum = true;
         } // if
@@ -407,7 +412,7 @@ public:
       if ( signBit > 1 || digitBit == 0 || dotBit > 1 ) isNum = false;
 
       gAtomType = SYMBOL;
-      if ( isNum && !isSymbol ) atomExp = NumProcess(atomExp);
+      if ( isNum && !isSymbol ) atomExp = NumProcess( atomExp );
     } // else
 
 
@@ -430,7 +435,7 @@ public:
       peek = cin.peek();
     } // while
 
-    atomExp = AtomAnalyze(atomExp);
+    atomExp = AtomAnalyze( atomExp );
 
     return atomExp;
   } // GetAtom()
@@ -440,7 +445,7 @@ public:
     peek = cin.peek();
     while ( peek == ' ' || peek == '\t' || peek == '\n' || peek == ';' ) {
       if ( peek == ';' ) {
-        while ( peek != '\n' && peek != EOF) {
+        while ( peek != '\n' && peek != EOF ) {
           cin.get();
           gColumn++;
           peek = cin.peek();
@@ -475,7 +480,7 @@ public:
     token.tokenLine = 0;
 
     if ( peek == EOF ) {
-      SetErrorMsg(EOF_ERROR, "\0",  0, 0);
+      SetErrorMsg( EOF_ERROR, "\0",  0, 0 );
       gIsEnd = true;
       return false;
     } // if
@@ -528,53 +533,53 @@ public:
         token.tokenColumn = gColumn + 1;
         token.tokenLine = gLine;
         token.tokenName = GetAtom();
-        int notSymbol = (int) token.tokenName.find('"');
+        int notSymbol = ( int ) token.tokenName.find( '"' );
         if ( notSymbol != token.tokenName.npos ) {
-          SetErrorMsg(CLOSE_ERROR, "\"", 0, 0);
+          SetErrorMsg( CLOSE_ERROR, "\"", 0, 0 );
           return false;
         } // if
       } // else
 
       token.tokenTypeNum = gAtomType;
-      gTokens.push_back(token);
+      gTokens.push_back( token );
 
       return true;
     } // else
 
   } // GetToken()
 
-// ------------------ReadSExp--------------------- //
+  // ------------------ReadSExp--------------------- //
 
 
   bool SyntaxChecker() {
-    if ( AtomJudge(gTokens.back().tokenTypeNum) || gTokens.back().tokenName == "quote" ) {
+    if ( AtomJudge( gTokens.back().tokenTypeNum ) || gTokens.back().tokenName == "quote" ) {
       return true;
     } // if
 
     else if ( gTokens.back().tokenTypeNum == LEFTPAREN ) {
 
-      if ( !GetToken()) return false;
+      if ( !GetToken() ) return false;
 
-      if ( SyntaxChecker()) {
-        if ( !GetToken()) return false;
+      if ( SyntaxChecker() ) {
+        if ( !GetToken() ) return false;
 
-        while ( SyntaxChecker()) {
-          if ( !GetToken()) return false;
+        while ( SyntaxChecker() ) {
+          if ( !GetToken() ) return false;
         } // while
 
         if ( gErrorMsgType != NOT_S_EXP_ERROR ) return false;
 
         if ( gTokens.back().tokenTypeNum == DOT ) {
           // cout << "Dot " ;
-          if ( GetToken()) {
-            if ( SyntaxChecker()) {
-              if ( !GetToken()) return false;
+          if ( GetToken() ) {
+            if ( SyntaxChecker() ) {
+              if ( !GetToken() ) return false;
             } // if  syntax checker
 
             else {
               if ( gErrorMsgType == NOT_S_EXP_ERROR ) {
-                SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-                            gTokens.back().tokenLine, gTokens.back().tokenColumn);
+                SetErrorMsg( LEFT_ERROR, gTokens.back().tokenName,
+                             gTokens.back().tokenLine, gTokens.back().tokenColumn );
               } // if
 
               return false;
@@ -589,16 +594,16 @@ public:
           return true;
         } // if
         else {
-          SetErrorMsg(RIGHT_ERROR, gTokens.back().tokenName,
-                      gTokens.back().tokenLine, gTokens.back().tokenColumn);
+          SetErrorMsg( RIGHT_ERROR, gTokens.back().tokenName,
+                       gTokens.back().tokenLine, gTokens.back().tokenColumn );
           return false;
         } // else
       } // if
 
       else {
         if ( gErrorMsgType == NOT_S_EXP_ERROR ) {
-          SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-                      gTokens.back().tokenLine, gTokens.back().tokenColumn);
+          SetErrorMsg( LEFT_ERROR, gTokens.back().tokenName,
+                       gTokens.back().tokenLine, gTokens.back().tokenColumn );
         } // if
 
         return false;
@@ -612,21 +617,21 @@ public:
       gTokens.pop_back();
       temp.tokenName = "(";
       temp.tokenTypeNum = LEFTPAREN;
-      gTokens.push_back(temp);
+      gTokens.push_back( temp );
       temp.tokenName = "quote";
       temp.tokenTypeNum = QUOTE;
-      gTokens.push_back(temp);
+      gTokens.push_back( temp );
 
-      if ( GetToken()) {
-        if ( SyntaxChecker()) {
+      if ( GetToken() ) {
+        if ( SyntaxChecker() ) {
           temp.tokenName = ")";
           temp.tokenTypeNum = RIGHTPAREN;
-          gTokens.push_back(temp);
+          gTokens.push_back( temp );
           return true;
         } // if :push right paren
         else {
-          SetErrorMsg(LEFT_ERROR, gTokens.back().tokenName,
-                      gTokens.back().tokenLine, gTokens.back().tokenColumn);
+          SetErrorMsg( LEFT_ERROR, gTokens.back().tokenName,
+                       gTokens.back().tokenLine, gTokens.back().tokenColumn );
           return false;
         } // else
       } // if
@@ -634,8 +639,8 @@ public:
       else return false;
     } // if
 
-    SetErrorMsg(NOT_S_EXP_ERROR, gTokens.back().tokenName,
-                gTokens.back().tokenLine, gTokens.back().tokenColumn);
+    SetErrorMsg( NOT_S_EXP_ERROR, gTokens.back().tokenName,
+                 gTokens.back().tokenLine, gTokens.back().tokenColumn );
     return false;
 
   } // SyntaxChecker()
@@ -648,7 +653,7 @@ public:
         InitialNode( currentNode->rightNode );
         currentNode->rightNode->tokenName = Tokens.front().tokenName;
         currentNode->rightNode->tokenType = Tokens.front().tokenTypeNum;
-        Tokens.erase(Tokens.begin());
+        Tokens.erase( Tokens.begin() );
       } // if : isRight
 
       else {
@@ -656,17 +661,17 @@ public:
         InitialNode( currentNode->leftNode );
         currentNode->leftNode->tokenName = Tokens.front().tokenName;
         currentNode->leftNode->tokenType = Tokens.front().tokenTypeNum;
-        Tokens.erase(Tokens.begin());
-      } // if : isLeft
+        Tokens.erase( Tokens.begin() );
+      } // else : isLeft
     } // if
 
 
     else if ( Tokens.front().tokenTypeNum == LEFTPAREN ) {
       if ( isRight ) {
         currentNode->rightNode = new TokenTree;
-        InitialNode(currentNode->rightNode);
-        Tokens.erase(Tokens.begin());
-        CreateTree(currentNode->rightNode, Tokens, false);
+        InitialNode( currentNode->rightNode );
+        Tokens.erase( Tokens.begin() );
+        CreateTree( currentNode->rightNode, Tokens, false );
         currentNode = currentNode->rightNode;
       } // if : isRight
 
@@ -674,28 +679,28 @@ public:
         currentNode->leftNode = new TokenTree;
         currentNode->leftNode->needToBePrimitive = true;
         InitialNode( currentNode->leftNode );
-        Tokens.erase(Tokens.begin());
+        Tokens.erase( Tokens.begin() ) ;
         CreateTree( currentNode->leftNode, Tokens, false );
         currentNode = currentNode->leftNode;
       } // else : is left
 
 
       while ( Tokens.front().tokenTypeNum == LEFTPAREN || Tokens.front().tokenTypeNum == QUOTE ||
-              AtomJudge(Tokens.front().tokenTypeNum)) {
+              AtomJudge( Tokens.front().tokenTypeNum ) ) {
         currentNode->rightNode = new TokenTree;
-        InitialNode(currentNode->rightNode);
-        CreateTree(currentNode->rightNode, Tokens, false);
+        InitialNode( currentNode->rightNode );
+        CreateTree( currentNode->rightNode, Tokens, false );
         currentNode = currentNode->rightNode;
       } // while
 
 
       if ( Tokens.front().tokenTypeNum == DOT ) {
-        Tokens.erase(Tokens.begin());
-        CreateTree(currentNode, Tokens, true);
+        Tokens.erase( Tokens.begin() );
+        CreateTree( currentNode, Tokens, true );
       } // if : Dot
 
       if ( Tokens.front().tokenTypeNum == RIGHTPAREN ) {
-        Tokens.erase(Tokens.begin());
+        Tokens.erase( Tokens.begin() );
         return;
       } // if : right paren
 
@@ -706,13 +711,13 @@ public:
 
 
   bool ReadSExp() {
-    if ( SyntaxChecker()) {
+    if ( SyntaxChecker() ) {
       vector<Token> tokens = gTokens;
       gTreeRoot = new TokenTree;
       gCurrentNode = gTreeRoot;
-      InitialNode(gTreeRoot);
+      InitialNode( gTreeRoot );
 
-      CreateTree( gTreeRoot , tokens, false );
+      CreateTree( gTreeRoot, tokens, false ) ;
       
       gTreeRoot = gTreeRoot->leftNode ;
       gCurrentNode = gTreeRoot;
@@ -725,7 +730,7 @@ public:
   } // ReadSExp()
 
 
-// ------------------Print Function--------------------- //
+  // ------------------Print Function--------------------- //
 
 
   void PrintSExpTree( TokenTree *currentNode, bool isRightNode, int &layer, bool isError ) {
@@ -738,7 +743,8 @@ public:
 
 
     if ( lineReturn && currentNode->tokenName == "\0" ) {
-      for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
+      for ( int i = 0 ; i < layer ; i++ )
+        cout << "  " ;
     } // if
 
     if ( currentNode->tokenName != "\0" ) {
@@ -752,26 +758,33 @@ public:
       } // if : leftNode
       
       else if ( currentNode->tokenType != NIL ) {
-        for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
+        for ( int i = 0 ; i < layer ; i++ )
+          cout << "  " ;
         cout << "." << endl;
-        for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
+        for ( int i = 0 ; i < layer ; i++ )
+          cout << "  " ;
         if ( IsFunction( currentNode->tokenName ) && !isError ) {
           cout << "#<procedure " ;
           cout << currentNode->tokenName << ">" << endl;
         } // if : is Function
         else cout << currentNode->tokenName << endl;
-      } // else
+      } // if
     } // if
 
-    if ( currentNode->leftNode ) PrintSExpTree( currentNode->leftNode, false, layer, isError);
+    if ( currentNode->leftNode )
+      PrintSExpTree( currentNode->leftNode, false, layer, isError );
 
-    if ( currentNode->rightNode ) PrintSExpTree( currentNode->rightNode, true, layer, isError);
+    if ( currentNode->rightNode )
+      PrintSExpTree( currentNode->rightNode, true, layer, isError );
 
     if ( layer > 1 && currentNode->tokenName == "\0" &&
-        ( currentNode->rightNode == NULL || ( currentNode->leftNode->tokenName != "\0" && currentNode->rightNode->tokenName != "\0" ) ) ) {
+         ( currentNode->rightNode == NULL ||
+           ( currentNode->leftNode->tokenName != "\0" &&
+             currentNode->rightNode->tokenName != "\0" ) ) ) {
       lineReturn = true;
       layer--;
-      for ( int i = 0 ; i < layer ; i++ ) cout << "  ";
+      for ( int i = 0 ; i < layer ; i++ )
+        cout << "  " ;
       cout << ")" << endl;
     } // if : print right paren
     
@@ -782,8 +795,8 @@ public:
     int layer = 0;
     if ( gTreeRoot->tokenName != "\0" ) {
       if ( gTreeRoot->tokenType == FLOAT ) {
-        cout << fixed << setprecision(3)
-             << round(atof( gTreeRoot->tokenName.c_str()) * 1000) / 1000 << endl;
+        cout << fixed << setprecision( 3 )
+             << round( atof( gTreeRoot->tokenName.c_str() ) * 1000 ) / 1000 << endl;
       } // if : float print
       else {
         if ( IsFunction( gTreeRoot->tokenName )  ) {
@@ -800,8 +813,11 @@ public:
     
     else if ( gTreeRoot != NULL ) {
       PrintSExpTree( gTreeRoot, false, layer, false );
-      for ( int i = 0 ; i < layer ; i++ ) cout << ")" << endl;
-    } // else
+      for ( int i = 0 ; i < layer ; i++ )
+        cout << ")" << endl;
+    } // if
+
+    cout << endl ;
   } // PrintFunctionMsg()
 
 
@@ -822,17 +838,18 @@ public:
       cout << "ERROR (no more input) : END-OF-FILE encountered";
   } // PrintErrorMessage()
 
-  void PrintEvaluateErrorMessage( int errorType, TokenTree* errorNode ) {
+  void PrintEvaluateErrorMessage( TokenTree* errorNode ) {
     int layer = 0 ;
     if ( errorNode != NULL ) {
       PrintSExpTree( errorNode, false, layer, true );
-      for ( int i = 0 ; i < layer ; i++ ) cout << ")" << endl;
+      for ( int i = 0 ; i < layer ; i++ )
+        cout << ")" << endl;
     } // if : have to print tree
     
     else cout << endl ;
   } // PrintEvaluateErrorMessage()
   
-// ------------------Functional Function--------------------- //
+  // ------------------Functional Function--------------------- //
 
   TokenTree* Cons( TokenTree* currentNode ) {
     CheckParameterNum( currentNode, 2, "cons" ) ;
@@ -847,7 +864,7 @@ public:
   TokenTree* Quote( TokenTree* currentNode ) {
     currentNode->rightNode->leftNode->fromQuote = true ;
     return currentNode->rightNode->leftNode;
-  } // Quote
+  } // Quote()
 
   TokenTree* Define( TokenTree* currentNode ) {
     TokenTree* resultNode = new TokenTree ;
@@ -855,14 +872,16 @@ public:
     InitialNode( resultNode ) ;
     
     CheckParameterNum( currentNode, 2, "define" ) ;
-    if ( currentNode->rightNode->leftNode->tokenType != SYMBOL || IsFunction(currentNode->rightNode->leftNode->tokenName ) ) {
+    if ( currentNode->rightNode->leftNode->tokenType != SYMBOL ||
+         IsFunction( currentNode->rightNode->leftNode->tokenName ) ) {
       cout << "ERROR (DEFINE format) : " ;
-      throw Exception( FORMAT_ERROR, currentNode ) ;
+      PrintEvaluateErrorMessage( currentNode ) ;
+      throw Exception( FORMAT_ERROR ) ;
     } // if : first token is not symbol or is a function
 
     if ( currentNode != gTreeRoot ) {
       cout <<  "ERROR (level of DEFINE)" ;
-      throw Exception( FORMAT_ERROR, NULL ) ;
+      throw Exception( FORMAT_ERROR ) ;
     } // if : first token is not symbol or is a function
 
     defined.symbolName = currentNode->rightNode->leftNode->tokenName ;
@@ -874,7 +893,7 @@ public:
     return resultNode ;
   } // Define()
 
-  TokenTree* List( TokenTree *currentNode ) {
+  TokenTree* List( TokenTree* currentNode ) {
     TokenTree* resultNode = new TokenTree ;
     TokenTree* resultWalkNode = resultNode ;
     InitialNode( resultNode ) ;
@@ -884,7 +903,7 @@ public:
       resultWalkNode->leftNode = EvaluateSExp( currentNode->leftNode ) ;
     } // if : connect to left node
     
-    while( currentNode->rightNode ) {
+    while ( currentNode->rightNode ) {
       currentNode = currentNode->rightNode ;
       resultWalkNode->rightNode = new TokenTree ;
       InitialNode( resultWalkNode->rightNode ) ;
@@ -904,14 +923,14 @@ public:
     walkNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     if ( walkNode->tokenName != "\0" ) {
       cout << "ERROR (car with incorrect argument type) : " + walkNode->tokenName ;
-      throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
     
     if ( walkNode->rightNode )
       resultNode = walkNode->leftNode  ;
     
     else {
-      while( walkNode->leftNode && walkNode->leftNode->tokenName == "\0" )
+      while ( walkNode->leftNode && walkNode->leftNode->tokenName == "\0" )
         walkNode = walkNode->leftNode ;
       if ( !walkNode->rightNode && walkNode->leftNode ) resultNode = walkNode->leftNode ;
       else resultNode = walkNode ;
@@ -928,7 +947,7 @@ public:
     walkNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     if ( walkNode->tokenName != "\0" ) {
       cout << "ERROR (cdr with incorrect argument type) : " + walkNode->tokenName ;
-      throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
     
     if ( walkNode->rightNode )
@@ -963,7 +982,7 @@ public:
     } // else : not atom
     
     return resultNode ;
-  } // Is_Atom
+  } // Is_Atom()
 
   TokenTree* Is_Pair( TokenTree *currentNode ) {
     TokenTree* resultNode = NULL ;
@@ -1015,7 +1034,7 @@ public:
     } // else : not atom
     
     return resultNode ;
-  } // Is_List
+  } // Is_List()
 
   TokenTree* Is_Null( TokenTree *currentNode ) {
     TokenTree* resultNode = NULL ;
@@ -1037,7 +1056,7 @@ public:
     } // else : not atom
     
     return resultNode ;
-  } // Is_Null
+  } // Is_Null()
 
   TokenTree* Is_Int( TokenTree *currentNode ) {
     TokenTree* resultNode = NULL ;
@@ -1147,7 +1166,7 @@ public:
     } // else : not atom
     
     return resultNode ;
-  } // Is_Bool
+  } // Is_Bool()
 
   TokenTree* Is_Symbol( TokenTree *currentNode ) {
     TokenTree* resultNode = NULL ;
@@ -1188,15 +1207,15 @@ public:
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        inputNum = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum + resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
       } // if : int or float
       
       else {
         cout << "ERROR (+ with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
 
@@ -1209,7 +1228,7 @@ public:
       resultNode->tokenType = FLOAT ;
     } // if : float result
     else {
-      resultInt = (int) resultFloat;
+      resultInt = ( int ) resultFloat;
       sstream << resultInt;
       string resultString = sstream.str();
       resultNode->tokenName = resultString ;
@@ -1238,13 +1257,13 @@ public:
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
         if ( firstNum ) {
-          resultFloat = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+          resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
           if ( judgeNode->tokenType == FLOAT ) isFloat = true;
         } // if : first num
           
         else {
-          inputNum = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+          inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           resultFloat = resultFloat - inputNum;
           if ( judgeNode->tokenType == FLOAT ) isFloat = true;
         } // else : not first num
@@ -1252,8 +1271,8 @@ public:
       
       else {
         cout << "ERROR (- with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
     } // while: walkNode go to right node
@@ -1265,7 +1284,7 @@ public:
       resultNode->tokenType = FLOAT ;
     } // if : float result
     else {
-      resultInt = (int) resultFloat;
+      resultInt = ( int ) resultFloat;
       sstream << resultInt;
       string resultString = sstream.str();
       resultNode->tokenName = resultString ;
@@ -1273,7 +1292,7 @@ public:
     } // else : int result
 
     return resultNode ;
-  } // Minus
+  } // Minus()
 
   TokenTree* Div( TokenTree *currentNode ) {
     TokenTree* resultNode = new TokenTree ;
@@ -1294,17 +1313,17 @@ public:
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
         if ( firstNum ) {
-          resultFloat = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+          resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
           if ( judgeNode->tokenType == FLOAT ) isFloat = true;
         } // if : first num
           
         else {
-          inputNum = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+          inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           
           if ( inputNum == 0.0 ) {
             cout << "ERROR (division by zero) : /" ;
-            throw Exception( DIVISION_BY_ZERO_ERROR, NULL ) ;
+            throw Exception( DIVISION_BY_ZERO_ERROR ) ;
           } // if : division zero
           
           resultFloat = resultFloat / inputNum;
@@ -1314,8 +1333,8 @@ public:
       
       else {
         cout << "ERROR (/ with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
     } // while: walkNode go to right node
@@ -1327,7 +1346,7 @@ public:
       resultNode->tokenType = FLOAT ;
     } // if : float result
     else {
-      resultInt = (int) resultFloat;
+      resultInt = ( int ) resultFloat;
       sstream << resultInt;
       string resultString = sstream.str();
       resultNode->tokenName = resultString ;
@@ -1354,15 +1373,15 @@ public:
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        inputNum = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum * resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
       } // if
       
       else {
         cout << "ERROR (* with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
 
@@ -1375,7 +1394,7 @@ public:
       resultNode->tokenType = FLOAT ;
     } // if : float result
     else {
-      resultInt = (int) resultFloat;
+      resultInt = ( int ) resultFloat;
       sstream << resultInt;
       string resultString = sstream.str();
       resultNode->tokenName = resultString ;
@@ -1454,29 +1473,29 @@ public:
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-      compare1 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+      compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
     else {
       cout << "ERROR (> with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        compare2 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 <= compare2 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (> with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1506,29 +1525,29 @@ public:
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-      compare1 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+      compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
     else {
       cout << "ERROR (>= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        compare2 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 < compare2 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (>= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1558,29 +1577,29 @@ public:
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-      compare1 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+      compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
     else {
       cout << "ERROR (< with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        compare2 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 >= compare2 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (< with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1610,29 +1629,29 @@ public:
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-      compare1 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+      compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
     else {
       cout << "ERROR (<= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        compare2 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 > compare2 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (<= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1662,29 +1681,29 @@ public:
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-      compare1 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+      compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
     else {
       cout << "ERROR (= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
-        compare2 = round(atof( judgeNode->tokenName.c_str()) * 1000) / 1000;
+        compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 != compare2 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1713,15 +1732,15 @@ public:
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
         judgeNode->tokenName.erase( judgeNode->tokenName.begin() );
-        judgeNode->tokenName.pop_back();
+        judgeNode->tokenName.resize( judgeNode->tokenName.size()-1 );
         resultTokenName = resultTokenName + judgeNode->tokenName ;
       } // if : string
       
       else {
         cout << "ERROR (string-append with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
 
     resultTokenName = "\"" + resultTokenName;
@@ -1752,24 +1771,24 @@ public:
     
     else {
       cout << "ERROR (string>? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
         compare2 = judgeNode->tokenName ;
-        if ( strcmp(compare1.c_str(), compare2.c_str()) <= 0 ) isNil  = true ;
+        if ( strcmp( compare1.c_str(), compare2.c_str() ) <= 0 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : string
       
       else {
         cout << "ERROR (string>? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1804,24 +1823,24 @@ public:
     
     else {
       cout << "ERROR (string<? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
         compare2 = judgeNode->tokenName ;
-        if ( strcmp(compare1.c_str(), compare2.c_str()) >= 0 ) isNil  = true ;
+        if ( strcmp( compare1.c_str(), compare2.c_str() ) >= 0 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (string<? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1856,24 +1875,24 @@ public:
     
     else {
       cout << "ERROR (string=? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-      else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-    } // if : throw exception
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      throw Exception( PARAMETER_TYPE_ERROR ) ;
+    } // else : throw exception
     
-    while( walkNode->rightNode ) {
+    while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
         compare2 = judgeNode->tokenName ;
-        if ( strcmp(compare1.c_str(), compare2.c_str()) != 0 ) isNil  = true ;
+        if ( strcmp( compare1.c_str(), compare2.c_str() ) != 0 ) isNil  = true ;
         compare1 = compare2 ;
       } // if : int or float
       
       else {
         cout << "ERROR (string=? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) throw Exception( PARAMETER_TYPE_ERROR, judgeNode ) ;
-        else throw Exception( PARAMETER_TYPE_ERROR, NULL ) ;
-      } // if : throw exception
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        throw Exception( PARAMETER_TYPE_ERROR ) ;
+      } // else : throw exception
     } // while : walk every node
     
     if ( isNil ) {
@@ -1889,7 +1908,8 @@ public:
     return resultNode ;
   } // Is_Str_Equal()
 
-  /*TokenTree* Is_Eqv( TokenTree *currentNode ) {
+  /*
+  TokenTree* Is_Eqv( TokenTree *currentNode ) {
     string resultTokenName = "\0";
     int resultTokenType = NO_TYPE;
   } // Is_Equal()
@@ -1914,9 +1934,15 @@ public:
     int resultTokenType = NO_TYPE;
   } // Cond()
 
+  */
   TokenTree* Clean_Env( TokenTree *currentNode ) {
+    TokenTree* resultNode = new TokenTree ;
+    InitialNode( resultNode ) ;
+    resultNode->tokenName = "environment cleaned" ;
     gDefineSymbols.clear();
-  } // Clear_Env()*/
+
+    return  resultNode ;
+  } // Clean_Env()
 
   TokenTree* Exit( TokenTree *currentNode ) {
     CheckParameterNum( currentNode, 0, "exit" ) ;
@@ -1926,49 +1952,51 @@ public:
   TokenTree* FindCorrespondFunction( TokenTree *currentNode, string tokenName ) {
     if ( tokenName == "cons" ) return Cons( currentNode );
     else if ( tokenName == "quote" ) return Quote( currentNode );
-    else if ( tokenName == "define" ) return Define(currentNode);
-    else if ( tokenName == "list" ) return List(currentNode);
-    else if ( tokenName == "car" ) return Car(currentNode);
-    else if ( tokenName == "cdr" ) return Cdr(currentNode);
-    else if ( tokenName == "atom?" ) return Is_Atom(currentNode);
-    else if ( tokenName == "pair?" ) return Is_Pair(currentNode);
-    else if ( tokenName == "list?" ) return Is_List(currentNode);
-    else if ( tokenName == "null?" ) return Is_Null(currentNode);
-    else if ( tokenName == "integer?" ) return Is_Int(currentNode);
-    else if ( tokenName == "real?" ) return Is_Real(currentNode);
-    else if ( tokenName == "number?" ) return Is_Num(currentNode);
-    else if ( tokenName == "string?" ) return Is_Str(currentNode);
-    else if ( tokenName == "boolean?" ) return Is_Bool(currentNode);
-    else if ( tokenName == "symbol?" ) return Is_Symbol(currentNode);
-    else if ( tokenName == "+" ) return Plus(currentNode);
-    else if ( tokenName == "-" ) return Minus(currentNode);
-    else if ( tokenName == "*" ) return Mult(currentNode);
-    else if ( tokenName == "/" ) return Div(currentNode);
-    else if ( tokenName == "not" ) return Not(currentNode);
-    else if ( tokenName == "and" ) return And(currentNode);
-    else if ( tokenName == "or" ) return Or(currentNode);
-    else if ( tokenName == ">" ) return Greater(currentNode);
-    else if ( tokenName == ">=" ) return GreaterEqual(currentNode);
-    else if ( tokenName == "<" ) return Less(currentNode);
-    else if ( tokenName == "<=" ) return LessEqual(currentNode);
-    else if ( tokenName == "=" ) return Equal(currentNode);
-    else if ( tokenName == "string-append" ) return Str_Append(currentNode);
-    else if ( tokenName == "string>?" ) return Is_Str_Greater(currentNode);
-    else if ( tokenName == "string<?" ) return Is_Str_Less(currentNode);
-    else if ( tokenName == "string=?" ) return Is_Str_Equal(currentNode);
-    /*else if ( tokenName == "eqv?" ) return Is_Eqv(currentNode);
-    else if ( tokenName == "equal?" ) return Is_Equal(currentNode);
-    else if ( tokenName == "begin" ) return Begin(currentNode);
-    else if ( tokenName == "if" ) return If(currentNode);
-    else if ( tokenName == "cond" ) return Cond(currentNode);
-    else if ( tokenName == "clean-environment" ) return Clean_Env(currentNode);*/
-    else if ( tokenName == "exit" ) return Exit(currentNode);
+    else if ( tokenName == "define" ) return Define( currentNode );
+    else if ( tokenName == "list" ) return List( currentNode );
+    else if ( tokenName == "car" ) return Car( currentNode );
+    else if ( tokenName == "cdr" ) return Cdr( currentNode );
+    else if ( tokenName == "atom?" ) return Is_Atom( currentNode );
+    else if ( tokenName == "pair?" ) return Is_Pair( currentNode );
+    else if ( tokenName == "list?" ) return Is_List( currentNode );
+    else if ( tokenName == "null?" ) return Is_Null( currentNode );
+    else if ( tokenName == "integer?" ) return Is_Int( currentNode );
+    else if ( tokenName == "real?" ) return Is_Real( currentNode );
+    else if ( tokenName == "number?" ) return Is_Num( currentNode );
+    else if ( tokenName == "string?" ) return Is_Str( currentNode );
+    else if ( tokenName == "boolean?" ) return Is_Bool( currentNode );
+    else if ( tokenName == "symbol?" ) return Is_Symbol( currentNode );
+    else if ( tokenName == "+" ) return Plus( currentNode );
+    else if ( tokenName == "-" ) return Minus( currentNode );
+    else if ( tokenName == "*" ) return Mult( currentNode );
+    else if ( tokenName == "/" ) return Div( currentNode );
+    else if ( tokenName == "not" ) return Not( currentNode );
+    else if ( tokenName == "and" ) return And( currentNode );
+    else if ( tokenName == "or" ) return Or( currentNode );
+    else if ( tokenName == ">" ) return Greater( currentNode );
+    else if ( tokenName == ">=" ) return GreaterEqual( currentNode );
+    else if ( tokenName == "<" ) return Less( currentNode );
+    else if ( tokenName == "<=" ) return LessEqual( currentNode );
+    else if ( tokenName == "=" ) return Equal( currentNode );
+    else if ( tokenName == "string-append" ) return Str_Append( currentNode );
+    else if ( tokenName == "string>?" ) return Is_Str_Greater( currentNode );
+    else if ( tokenName == "string<?" ) return Is_Str_Less( currentNode );
+    else if ( tokenName == "string=?" ) return Is_Str_Equal( currentNode );
+    /*
+    else if ( tokenName == "eqv?" ) return Is_Eqv( currentNode );
+    else if ( tokenName == "equal?" ) return Is_Equal( currentNode );
+    else if ( tokenName == "begin" ) return Begin( currentNode );
+    else if ( tokenName == "if" ) return If( currentNode );
+    else if ( tokenName == "cond" ) return Cond( currentNode );
+    */
+    else if ( tokenName == "clean-environment" ) return Clean_Env( currentNode );
+    else if ( tokenName == "exit" ) return Exit( currentNode );
     return NULL ;
   } // FindCorrespondFunction()
 
 
 
-// ------------------Evaluate Function--------------------- //
+  // ------------------Evaluate Function--------------------- //
 
 
   TokenTree * EvaluateSExp( TokenTree *currentNode ) {
@@ -1980,9 +2008,9 @@ public:
         } // if : is in definition
         
         else {
-          if( !IsFunction( currentNode->tokenName ) ) {
+          if ( !IsFunction( currentNode->tokenName ) ) {
             cout << "ERROR (unbound symbol) : " + currentNode->tokenName;
-            throw Exception(UNBOND_ERROR, NULL);
+            throw Exception( UNBOND_ERROR );
           } // if : not function
         } // else : throw exception
         
@@ -2005,14 +2033,15 @@ public:
 
             else {
               cout << "ERROR (attempt to apply non-function) : " ;
-              throw Exception( NO_APPLY_ERROR, defined.binding ) ;
+              PrintEvaluateErrorMessage( defined.binding ) ;
+              throw Exception( NO_APPLY_ERROR ) ;
             } // else : define is a node-> error
           } // if : is in definition
 
           else {
             if ( !IsFunction( currentNode->leftNode->tokenName ) ) {
               cout << "ERROR (unbound symbol) : " + currentNode->leftNode->tokenName ;
-              throw Exception( UNBOND_ERROR, NULL ) ;
+              throw Exception( UNBOND_ERROR ) ;
             } // if
           } // else : throw exception
         } // if : if is SYMBOL　
@@ -2023,7 +2052,7 @@ public:
         
         else {
           cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName ;
-          throw Exception( NO_APPLY_ERROR, NULL ) ;
+          throw Exception( NO_APPLY_ERROR ) ;
         } // else : no apply error
       } // if
       
@@ -2050,16 +2079,15 @@ int main() {
 
   do {
     cout << "> ";
-    if ( project.GetToken()) {
+    if ( project.GetToken() ) {
       if ( project.ReadSExp() ) {
-        if ( !project.ExitDetect()) {
+        if ( !project.ExitDetect() ) {
           
           try {
             gTreeRoot = project.EvaluateSExp( gTreeRoot ) ;
             project.PrintFunctionMsg() ;
           } // try
           catch( Exception e ) {
-            project.PrintEvaluateErrorMessage( e.mErrorType, e.mErrorNode ) ;
           } // catch
           
           project.ClearSpaceAndOneLine();
