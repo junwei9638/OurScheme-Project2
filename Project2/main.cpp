@@ -1713,7 +1713,7 @@ public:
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
       if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
         judgeNode->tokenName.erase( judgeNode->tokenName.begin() );
-        judgeNode->tokenName.erase( judgeNode->tokenName.end() );
+        judgeNode->tokenName.pop_back();
         resultTokenName = resultTokenName + judgeNode->tokenName ;
       } // if : string
       
