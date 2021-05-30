@@ -279,12 +279,20 @@ class Project {
                 functionName == ">" || functionName == ">=" ||
                 functionName == "<" || functionName == "<=" || functionName == "=" ||
                 functionName == "string-append" || functionName == "string>?" ||
-                functionName == "string<?" || functionName == "string=?" ) {
+                functionName == "string<?" || functionName == "string=?" || functionName == "cond" ||
+                functionName == "begin" ) {
         if ( num < needNum ) {
           cout << "ERROR (incorrect number of arguments) : " + functionName ;
           throw Exception( PARAMETER_NUM_ERROR ) ;
-        } // if : not >= 2
+        } // if : not >= needNum
       } // if : define format
+
+      else if ( functionName == "if" ) {
+        if ( num != 2 && num != 3 ) {
+          cout << "ERROR (incorrect number of arguments) : " + functionName ;
+          throw Exception( PARAMETER_NUM_ERROR ) ;
+        } // if : not 2 or 3
+      } // if : if situation
       
       else {
         cout << "ERROR (incorrect number of arguments) : " + functionName ;
@@ -293,6 +301,23 @@ class Project {
     } // if : throw exception
     
   } // CheckParameterNum()
+
+  bool CompareTwoTrees( TokenTree* compare1, TokenTree* compare2 ) {
+    static bool isSame = true ;
+    if ( compare1->tokenName != compare2->tokenName ) isSame = false ;
+
+    if ( ( compare1->leftNode && compare2->leftNode ) )
+      CompareTwoTrees( compare1->leftNode, compare2->leftNode ) ;
+    else if ( ( compare1->leftNode && !compare2->leftNode ) || ( !compare1->leftNode && compare2->leftNode ) )
+      isSame = false ;
+
+    if ( ( compare1->rightNode && compare2->rightNode ) )
+      CompareTwoTrees( compare1->rightNode, compare2->rightNode ) ;
+    else if ( ( compare1->rightNode && !compare2->rightNode ) || ( !compare1->rightNode && compare2->rightNode ) )
+      isSame = false ;
+
+    return isSame ;
+  } // CompareTwoTrees()
 
   // ------------------Get Token--------------------- //
 
@@ -1421,9 +1446,7 @@ class Project {
     TokenTree* judgeNode = NULL;
     
     CheckParameterNum( currentNode, 2, "and" ) ;
-    
-    walkNode = walkNode->rightNode;
-    judgeNode = EvaluateSExp( walkNode->leftNode ) ;
+
     while ( walkNode->rightNode != NULL ) {
       walkNode = walkNode->rightNode;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
@@ -1899,33 +1922,124 @@ class Project {
     return resultNode ;
   } // Is_Str_Equal()
 
-  /*
   TokenTree* Is_Eqv( TokenTree *currentNode ) {
-    string resultTokenName = "\0";
-    int resultTokenType = NO_TYPE;
+    TokenTree* resultNode = new TokenTree ;
+    TokenTree* compare1 = NULL ;
+    TokenTree* compare2 = NULL ;
+    InitialNode( resultNode ) ;
+    CheckParameterNum( currentNode, 2, "eqv?" ) ;
+
+    compare1 = EvaluateSExp( currentNode->rightNode->leftNode ) ;
+    compare2 = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+
+    if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
+      if ( AtomJudge( compare1->tokenType ) && AtomJudge( compare2->tokenType ) &&
+           compare1->tokenType != STRING && compare2->tokenType != STRING &&
+           !compare1->fromQuote && !compare2->fromQuote &&
+           compare1->tokenName == compare2->tokenName  ) {
+        resultNode->tokenName = "#t" ;
+        resultNode->tokenType = T ;
+      } // if : same token ,not quote string
+
+      else  {
+        resultNode->tokenName = "nil" ;
+        resultNode->tokenType = NIL ;
+      } // else not same token
+    } // if : token compare
+
+    else {
+      if ( compare1 == compare2 ) {
+        resultNode->tokenName = "#t" ;
+        resultNode->tokenType = T ;
+      } // if : same node
+
+      else  {
+        resultNode->tokenName = "nil" ;
+        resultNode->tokenType = NIL ;
+      } // else not same node
+    } // else : node compare
+
+    return  resultNode ;
   } // Is_Equal()
 
-  TokenTree* Is_Equal( TokenTree *currentNode ) {
-    string resultTokenName = "\0";
-    int resultTokenType = NO_TYPE;
+
+   TokenTree* Is_Equal( TokenTree *currentNode ) {
+     TokenTree* resultNode = new TokenTree ;
+     TokenTree* compare1 = NULL ;
+     TokenTree* compare2 = NULL ;
+     InitialNode( resultNode ) ;
+     CheckParameterNum( currentNode, 2, "equal?" ) ;
+
+     compare1 = EvaluateSExp( currentNode->rightNode->leftNode ) ;
+     compare2 = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+
+     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
+       if ( compare1->tokenName == compare2->tokenName  ) {
+         resultNode->tokenName = "#t" ;
+         resultNode->tokenType = T ;
+       } // if : same token ,not quote string
+
+       else  {
+         resultNode->tokenName = "nil" ;
+         resultNode->tokenType = NIL ;
+       } // else not same token
+     } // if : token compare
+
+     else {
+       if ( CompareTwoTrees( compare1, compare2 ) ) {
+         resultNode->tokenName = "#t" ;
+         resultNode->tokenType = T ;
+       } // if : same node
+
+       else  {
+         resultNode->tokenName = "nil" ;
+         resultNode->tokenType = NIL ;
+       } // else not same node
+     } // else : node compare
+
+     return  resultNode ;
   } // Is_Equal()
 
   TokenTree* Begin( TokenTree *currentNode ) {
-    string resultTokenName = "\0";
-    int resultTokenType = NO_TYPE;
+    TokenTree* resultNode = new TokenTree ;
+    InitialNode( resultNode ) ;
+    CheckParameterNum( currentNode, 1, "begin" ) ;
+
+    return  resultNode ;
   } // Begin()
 
   TokenTree* If( TokenTree *currentNode ) {
-    string resultTokenName = "\0";
-    int resultTokenType = NO_TYPE;
+    TokenTree* resultNode = NULL ;
+    TokenTree* judgeNode = NULL ;
+
+    CheckParameterNum( currentNode, 2, "if" ) ;
+    judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
+    if ( judgeNode->tokenType != NIL ) {
+      resultNode = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+    } // if : return first parameter
+
+    else {
+      if ( currentNode->rightNode->rightNode->rightNode )
+        resultNode = EvaluateSExp( currentNode->rightNode->rightNode->rightNode->leftNode ) ;
+      else {
+        cout << "ERROR (no return value) : " ;
+        PrintEvaluateErrorMessage( currentNode ) ;
+        throw Exception( NO_RETURN_VAL_ERROR ) ;
+      } // else : nothing can return -> throw
+    } // else : return second parameter
+
+    return  resultNode ;
   } // If()
 
   TokenTree* Cond( TokenTree *currentNode ) {
-    string resultTokenName = "\0";
-    int resultTokenType = NO_TYPE;
+    TokenTree* resultNode = new TokenTree ;
+    InitialNode( resultNode ) ;
+    CheckParameterNum( currentNode, 1, "cond" ) ;
+
+    return  resultNode ;
   } // Cond()
 
-  */
+
   TokenTree* Clean_Env( TokenTree *currentNode ) {
     TokenTree* resultNode = new TokenTree ;
     InitialNode( resultNode ) ;
@@ -1973,13 +2087,11 @@ class Project {
     else if ( tokenName == "string>?" ) return Is_Str_Greater( currentNode );
     else if ( tokenName == "string<?" ) return Is_Str_Less( currentNode );
     else if ( tokenName == "string=?" ) return Is_Str_Equal( currentNode );
-    /*
     else if ( tokenName == "eqv?" ) return Is_Eqv( currentNode );
     else if ( tokenName == "equal?" ) return Is_Equal( currentNode );
     else if ( tokenName == "begin" ) return Begin( currentNode );
     else if ( tokenName == "if" ) return If( currentNode );
     else if ( tokenName == "cond" ) return Cond( currentNode );
-    */
     else if ( tokenName == "clean-environment" ) return Clean_Env( currentNode );
     else if ( tokenName == "exit" ) return Exit( currentNode );
     return NULL ;
