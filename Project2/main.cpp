@@ -925,17 +925,8 @@ class Project {
       cout << "ERROR (car with incorrect argument type) : " + walkNode->tokenName ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
-    
-    if ( walkNode->rightNode )
-      resultNode = walkNode->leftNode  ;
-    
-    else {
-      while ( walkNode->leftNode && walkNode->leftNode->tokenName == "\0" )
-        walkNode = walkNode->leftNode ;
-      if ( !walkNode->rightNode && walkNode->leftNode ) resultNode = walkNode->leftNode ;
-      else resultNode = walkNode ;
-    } // else
-    
+
+    resultNode = walkNode->leftNode  ;
     return resultNode ;
   } // Car()
 
