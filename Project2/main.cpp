@@ -246,16 +246,16 @@ class Project {
   } // CheckDefinition()
 
 
-  void CheckNonList( TokenTree* currentNode ) {
+  bool CheckNonList( TokenTree* currentNode ) {
     TokenTree* walkNode = currentNode ;
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       if ( walkNode->tokenName != "\0" ) {
-        cout << "ERROR (non-list) : ";
-        PrintEvaluateErrorMessage( currentNode ) ;
-        throw Exception( NON_LIST_ERROR ) ;
+        return false ;
       } // if : nonlist
     } // while : check right token
+
+    return true ;
     
   } // CheckNonList()
   
@@ -270,7 +270,7 @@ class Project {
     if ( num != needNum ) {
       if ( functionName == "define" ) {
         cout << "ERROR (DEFINE format) : " ;
-        PrintEvaluateErrorMessage( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode ) ;
         throw Exception( PARAMETER_NUM_ERROR ) ;
       } // if : define format
       
@@ -279,23 +279,30 @@ class Project {
                 functionName == ">" || functionName == ">=" ||
                 functionName == "<" || functionName == "<=" || functionName == "=" ||
                 functionName == "string-append" || functionName == "string>?" ||
-                functionName == "string<?" || functionName == "string=?" || functionName == "cond" ||
-                functionName == "begin" ) {
+                functionName == "string<?" || functionName == "string=?" || functionName == "begin" ) {
         if ( num < needNum ) {
-          cout << "ERROR (incorrect number of arguments) : " + functionName ;
+          cout << "ERROR (incorrect number of arguments) : " + functionName << endl << endl ;
           throw Exception( PARAMETER_NUM_ERROR ) ;
         } // if : not >= needNum
-      } // if : define format
+      } // if : function
+
+      else if ( functionName == "cond" ) {
+        if ( num < needNum ) {
+          cout << "ERROR (COND format) : " ;
+          PrintEvaluateErrorTree( currentNode ) ;
+          throw Exception( FORMAT_ERROR ) ;
+        } // if : not >= needNum
+      } // if : cond format
 
       else if ( functionName == "if" ) {
         if ( num != 2 && num != 3 ) {
-          cout << "ERROR (incorrect number of arguments) : " + functionName ;
+          cout << "ERROR (incorrect number of arguments) : " + functionName << endl << endl;
           throw Exception( PARAMETER_NUM_ERROR ) ;
         } // if : not 2 or 3
       } // if : if situation
       
       else {
-        cout << "ERROR (incorrect number of arguments) : " + functionName ;
+        cout << "ERROR (incorrect number of arguments) : " + functionName << endl << endl;
         throw Exception( PARAMETER_NUM_ERROR ) ;
       } // else
     } // if : throw exception
@@ -863,16 +870,14 @@ class Project {
       cout << "ERROR (no more input) : END-OF-FILE encountered";
   } // PrintErrorMessage()
 
-  void PrintEvaluateErrorMessage( TokenTree* errorNode ) {
+  void PrintEvaluateErrorTree( TokenTree* errorNode ) {
     int layer = 0 ;
-    if ( errorNode != NULL ) {
-      PrintSExpTree( errorNode, false, layer, true );
-      for ( int i = 0 ; i < layer ; i++ )
-        cout << ")" << endl;
-    } // if : have to print tree
-    
-    else cout << endl ;
-  } // PrintEvaluateErrorMessage()
+    PrintSExpTree( errorNode, false, layer, true );
+    for ( int i = 0 ; i < layer ; i++ )
+      cout << ")" << endl;
+
+    cout << endl  ;
+  } // PrintEvaluateErrorTree()
   
   // ------------------Functional Function--------------------- //
 
@@ -900,7 +905,7 @@ class Project {
     if ( currentNode->rightNode->leftNode->tokenType != SYMBOL ||
          IsFunction( currentNode->rightNode->leftNode->tokenName ) ) {
       cout << "ERROR (DEFINE format) : " ;
-      PrintEvaluateErrorMessage( currentNode ) ;
+      PrintEvaluateErrorTree(currentNode) ;
       throw Exception( FORMAT_ERROR ) ;
     } // if : first token is not symbol or is a function
 
@@ -947,7 +952,7 @@ class Project {
     
     walkNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     if ( walkNode->tokenName != "\0" ) {
-      cout << "ERROR (car with incorrect argument type) : " + walkNode->tokenName ;
+      cout << "ERROR (car with incorrect argument type) : " + walkNode->tokenName << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
 
@@ -962,7 +967,7 @@ class Project {
     
     walkNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     if ( walkNode->tokenName != "\0" ) {
-      cout << "ERROR (cdr with incorrect argument type) : " + walkNode->tokenName ;
+      cout << "ERROR (cdr with incorrect argument type) : " + walkNode->tokenName << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
     
@@ -1230,7 +1235,8 @@ class Project {
       
       else {
         cout << "ERROR (+ with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
@@ -1287,7 +1293,8 @@ class Project {
       
       else {
         cout << "ERROR (- with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree(judgeNode) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
@@ -1338,7 +1345,7 @@ class Project {
           inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           
           if ( inputNum == 0.0 ) {
-            cout << "ERROR (division by zero) : /" ;
+            cout << "ERROR (division by zero) : /" << endl << endl ;
             throw Exception( DIVISION_BY_ZERO_ERROR ) ;
           } // if : division zero
           
@@ -1349,7 +1356,8 @@ class Project {
       
       else {
         cout << "ERROR (/ with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
@@ -1396,7 +1404,8 @@ class Project {
       
       else {
         cout << "ERROR (* with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
       
@@ -1492,7 +1501,8 @@ class Project {
     
     else {
       cout << "ERROR (> with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1507,7 +1517,8 @@ class Project {
       
       else {
         cout << "ERROR (> with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1544,7 +1555,8 @@ class Project {
     
     else {
       cout << "ERROR (>= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1559,7 +1571,8 @@ class Project {
       
       else {
         cout << "ERROR (>= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1596,7 +1609,8 @@ class Project {
     
     else {
       cout << "ERROR (< with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1611,7 +1625,8 @@ class Project {
       
       else {
         cout << "ERROR (< with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1648,7 +1663,8 @@ class Project {
     
     else {
       cout << "ERROR (<= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1663,7 +1679,8 @@ class Project {
       
       else {
         cout << "ERROR (<= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1700,7 +1717,8 @@ class Project {
     
     else {
       cout << "ERROR (= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1715,7 +1733,8 @@ class Project {
       
       else {
         cout << "ERROR (= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1752,7 +1771,8 @@ class Project {
       
       else {
         cout << "ERROR (string-append with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1785,7 +1805,8 @@ class Project {
     
     else {
       cout << "ERROR (string>? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1800,7 +1821,8 @@ class Project {
       
       else {
         cout << "ERROR (string>? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1837,7 +1859,8 @@ class Project {
     
     else {
       cout << "ERROR (string<? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1852,7 +1875,8 @@ class Project {
       
       else {
         cout << "ERROR (string<? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -1889,7 +1913,8 @@ class Project {
     
     else {
       cout << "ERROR (string=? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
     
@@ -1904,7 +1929,8 @@ class Project {
       
       else {
         cout << "ERROR (string=? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorMessage( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
     } // while : walk every node
@@ -2001,11 +2027,17 @@ class Project {
   } // Is_Equal()
 
   TokenTree* Begin( TokenTree *currentNode ) {
-    TokenTree* resultNode = new TokenTree ;
-    InitialNode( resultNode ) ;
+    TokenTree* resultNode = NULL ;
+    TokenTree* walkNode = currentNode ;
     CheckParameterNum( currentNode, 1, "begin" ) ;
 
+    while ( walkNode->rightNode ) {
+      walkNode = walkNode->rightNode ;
+      resultNode = EvaluateSExp( walkNode->leftNode );
+    } // while : walk every parameter
+
     return  resultNode ;
+
   } // Begin()
 
   TokenTree* If( TokenTree *currentNode ) {
@@ -2023,7 +2055,7 @@ class Project {
         resultNode = EvaluateSExp( currentNode->rightNode->rightNode->rightNode->leftNode ) ;
       else {
         cout << "ERROR (no return value) : " ;
-        PrintEvaluateErrorMessage( currentNode ) ;
+        PrintEvaluateErrorTree(currentNode) ;
         throw Exception( NO_RETURN_VAL_ERROR ) ;
       } // else : nothing can return -> throw
     } // else : return second parameter
@@ -2032,11 +2064,75 @@ class Project {
   } // If()
 
   TokenTree* Cond( TokenTree *currentNode ) {
-    TokenTree* resultNode = new TokenTree ;
-    InitialNode( resultNode ) ;
+    int num = 0 ;
+    TokenTree* walkNode = currentNode ;
+    TokenTree* walkParameterNode = NULL ;
+    TokenTree* resultNode = NULL ;
+    TokenTree* judgeNode = NULL ;
     CheckParameterNum( currentNode, 1, "cond" ) ;
 
-    return  resultNode ;
+
+    while ( walkNode->rightNode  ) {
+      walkNode = walkNode->rightNode ;
+      if ( walkNode->leftNode->tokenName != "\0" ) {
+        cout << "ERROR (COND format) : " ;
+        PrintEvaluateErrorTree( currentNode ) ;
+        throw Exception( FORMAT_ERROR ) ;
+      } // if : parameter is not node
+
+      if ( !walkNode->leftNode->rightNode || !CheckNonList( walkNode->leftNode ) ) {
+        cout << "ERROR (COND format) : " ;
+        PrintEvaluateErrorTree( currentNode ) ;
+        throw Exception( FORMAT_ERROR ) ;
+      } // if : nothing can return : or parameter non list
+      num++ ;
+    } // while : check parameter type
+
+    walkNode = currentNode->rightNode ;
+    for ( int i = 0; i < num-1; i++ ) {
+      judgeNode = EvaluateSExp( walkNode->leftNode->leftNode ) ;
+      if ( judgeNode->tokenType != NIL ) {
+        walkParameterNode = walkNode->leftNode ;
+        while ( walkParameterNode->rightNode ) {
+          walkParameterNode = walkParameterNode->rightNode ;
+          resultNode = EvaluateSExp( walkParameterNode->leftNode );
+        } // while : walk every parameter
+
+        return  resultNode ;
+      } // if
+      walkNode = walkNode->rightNode ;
+    } // for : check num-1 parameter can return
+
+    if ( walkNode->leftNode->leftNode->tokenName == "else" ) {
+      walkParameterNode = walkNode->leftNode ;
+      while ( walkParameterNode->rightNode ) {
+        walkParameterNode = walkParameterNode->rightNode ;
+        resultNode = EvaluateSExp( walkParameterNode->leftNode );
+      } // while : walk every parameter
+
+      return  resultNode ;
+    } // if : return
+
+    else {
+      judgeNode = EvaluateSExp( walkNode->leftNode->leftNode ) ;
+      if ( judgeNode->tokenType != NIL ) {
+        walkParameterNode = walkNode->leftNode ;
+        while ( walkParameterNode->rightNode ) {
+          walkParameterNode = walkParameterNode->rightNode ;
+          resultNode = EvaluateSExp( walkParameterNode->leftNode );
+        } // while : walk every parameter
+
+        return  resultNode ;
+      } // if : cond true : return result
+
+      else {
+        cout << "ERROR (no return value) : " ;
+        PrintEvaluateErrorTree(currentNode) ;
+        throw Exception( FORMAT_ERROR ) ;
+      } // else : no return value
+
+    } // else
+
   } // Cond()
 
 
@@ -2112,7 +2208,7 @@ class Project {
         
         else {
           if ( !IsFunction( currentNode->tokenName ) ) {
-            cout << "ERROR (unbound symbol) : " + currentNode->tokenName;
+            cout << "ERROR (unbound symbol) : " + currentNode->tokenName << endl << endl ;
             throw Exception( UNBOND_ERROR );
           } // if : not function
         } // else : throw exception
@@ -2129,7 +2225,11 @@ class Project {
         else return judgeNode;
       } // if : duoble paren
 
-      CheckNonList( currentNode ) ;
+      if ( !CheckNonList( currentNode ) ) {
+        cout << "ERROR (non-list) : " ;
+        PrintEvaluateErrorTree( currentNode ) ;
+        throw Exception( NON_LIST_ERROR ) ;
+      } // if : Non list check
 
       if ( currentNode->needToBePrimitive == true ) {
         if ( currentNode->leftNode->tokenType == SYMBOL ) {
@@ -2141,14 +2241,14 @@ class Project {
 
             else {
               cout << "ERROR (attempt to apply non-function) : " ;
-              PrintEvaluateErrorMessage( defined.binding ) ;
+              PrintEvaluateErrorTree(defined.binding) ;
               throw Exception( NO_APPLY_ERROR ) ;
             } // else : define is a node-> error
           } // if : is in definition
 
           else {
             if ( !IsFunction( currentNode->leftNode->tokenName ) ) {
-              cout << "ERROR (unbound symbol) : " + currentNode->leftNode->tokenName ;
+              cout << "ERROR (unbound symbol) : " + currentNode->leftNode->tokenName << endl << endl  ;
               throw Exception( UNBOND_ERROR ) ;
             } // if
           } // else : throw exception
@@ -2159,7 +2259,7 @@ class Project {
         } // if : check is Function
         
         else {
-          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName ;
+          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName << endl << endl ;
           throw Exception( NO_APPLY_ERROR ) ;
         } // else : no apply error
       } // if
