@@ -187,6 +187,13 @@ class Project {
     return temp;
   } // GetDefineSymbol()
 
+
+  void SetFromQuote( TokenTree* currentNode  ) {
+    currentNode->fromQuote = true ;
+    if ( currentNode->leftNode ) SetFromQuote( currentNode->leftNode ) ;
+    if ( currentNode->rightNode ) SetFromQuote( currentNode->rightNode ) ;
+  } // SetFromQuote()
+
   // ------------------JudgeMent Function--------------------- //
   bool ExitDetect() {
     int nilExit = -1;
@@ -250,7 +257,7 @@ class Project {
     TokenTree* walkNode = currentNode ;
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
-      if ( walkNode->tokenName != "\0" ) {
+      if ( walkNode->tokenName != "\0" && walkNode->tokenName != "nil" ) {
         return false ;
       } // if : nonlist
     } // while : check right token
@@ -262,7 +269,7 @@ class Project {
   void CheckParameterNum( TokenTree* currentNode, int needNum, string functionName ) {
     int num = 0 ;
     TokenTree* walkNode = currentNode ;
-    while ( walkNode->rightNode  ) {
+    while ( walkNode->rightNode && walkNode->rightNode->tokenName == "\0"  ) {
       walkNode = walkNode->rightNode ;
       num++ ;
     } // while
@@ -311,17 +318,28 @@ class Project {
 
   bool CompareTwoTrees( TokenTree* compare1, TokenTree* compare2 ) {
     static bool isSame = true ;
-    if ( compare1->tokenName != compare2->tokenName ) isSame = false ;
+    if ( strcmp( compare1->tokenName.c_str(), compare2->tokenName.c_str() ) != 0 )
+      isSame = false ;
 
     if ( ( compare1->leftNode && compare2->leftNode ) )
       CompareTwoTrees( compare1->leftNode, compare2->leftNode ) ;
-    else if ( ( compare1->leftNode && !compare2->leftNode ) || ( !compare1->leftNode && compare2->leftNode ) )
-      isSame = false ;
+    else if ( ( compare1->leftNode && !compare2->leftNode ) ||
+              ( !compare1->leftNode && compare2->leftNode ) ) {
+      if ( compare1->leftNode && compare1->leftNode->tokenType != NIL )
+        isSame = false;
+      if ( compare2->leftNode && compare2->leftNode->tokenType != NIL )
+        isSame = false;
+    } // if
 
     if ( ( compare1->rightNode && compare2->rightNode ) )
       CompareTwoTrees( compare1->rightNode, compare2->rightNode ) ;
-    else if ( ( compare1->rightNode && !compare2->rightNode ) || ( !compare1->rightNode && compare2->rightNode ) )
-      isSame = false ;
+    else if ( ( compare1->rightNode && !compare2->rightNode ) ||
+              ( !compare1->rightNode && compare2->rightNode ) ) {
+      if ( compare1->rightNode && compare1->rightNode->tokenType != NIL )
+        isSame = false;
+      if ( compare2->rightNode && compare2->rightNode->tokenType != NIL )
+        isSame = false;
+    } // if
 
     return isSame ;
   } // CompareTwoTrees()
@@ -781,10 +799,17 @@ class Project {
 
     if ( currentNode->tokenName != "\0" ) {
       if ( !isRightNode ) {
-        if ( IsFunction( currentNode->tokenName ) && !isError ) {
+        if ( IsFunction( currentNode->tokenName ) && !isError &&
+             !currentNode->fromQuote ) {
           cout << "#<procedure " ;
           cout << currentNode->tokenName << ">" << endl;
         } // if : is Function
+
+        else if ( currentNode->tokenType == FLOAT ) {
+          cout << fixed << setprecision( 3 )
+               << round( atof( currentNode->tokenName.c_str() ) * 1000 ) / 1000 << endl;
+        } // if : float print
+
         else cout << currentNode->tokenName << endl;
         lineReturn = true;
       } // if : leftNode
@@ -799,8 +824,22 @@ class Project {
           cout << "#<procedure " ;
           cout << currentNode->tokenName << ">" << endl;
         } // if : is Function
+
+        else if ( currentNode->tokenType == FLOAT ) {
+          cout << fixed << setprecision( 3 )
+               << round( atof( currentNode->tokenName.c_str() ) * 1000 ) / 1000 << endl;
+        } // if : float print
+
         else cout << currentNode->tokenName << endl;
-      } // if
+
+        if ( layer > 1 ) {
+          lineReturn = true;
+          layer--;
+          for ( int i = 0 ; i < layer ; i++ )
+            cout << "  " ;
+          cout << ")" << endl;
+        } // if : print right paren
+      } // if : . node case
     } // if
 
     if ( currentNode->leftNode )
@@ -892,7 +931,7 @@ class Project {
   }  // Cons()
   
   TokenTree* Quote( TokenTree* currentNode ) {
-    currentNode->rightNode->leftNode->fromQuote = true ;
+    SetFromQuote( currentNode->rightNode->leftNode ) ;
     return currentNode->rightNode->leftNode;
   } // Quote()
 
@@ -905,14 +944,14 @@ class Project {
     if ( currentNode->rightNode->leftNode->tokenType != SYMBOL ||
          IsFunction( currentNode->rightNode->leftNode->tokenName ) ) {
       cout << "ERROR (DEFINE format) : " ;
-      PrintEvaluateErrorTree(currentNode) ;
+      PrintEvaluateErrorTree( currentNode ) ;
       throw Exception( FORMAT_ERROR ) ;
     } // if : first token is not symbol or is a function
 
     if ( currentNode != gTreeRoot ) {
-      cout <<  "ERROR (level of DEFINE)" ;
-      throw Exception( FORMAT_ERROR ) ;
-    } // if : first token is not symbol or is a function
+      cout <<  "ERROR (level of DEFINE)" << endl << endl ;
+      throw Exception( LEVEL_OF_DEFINE ) ;
+    } // if : level of define
 
     defined.symbolName = currentNode->rightNode->leftNode->tokenName ;
     defined.binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
@@ -977,6 +1016,8 @@ class Project {
     else {
       resultNode = new TokenTree ;
       InitialNode( resultNode ) ;
+      resultNode->tokenName = "nil" ;
+      resultNode->tokenType = NIL ;
     } // else
     
     return resultNode ;
@@ -1066,7 +1107,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( judgeNode->tokenType == NIL && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == NIL ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1110,7 +1151,8 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( judgeNode->tokenType == INT && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) &&
+         !judgeNode->fromQuote ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1227,7 +1269,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum + resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
@@ -1277,7 +1319,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         if ( firstNum ) {
           resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
@@ -1293,7 +1335,7 @@ class Project {
       
       else {
         cout << "ERROR (- with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree(judgeNode) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
@@ -1334,7 +1376,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
         if ( firstNum ) {
           resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
@@ -1396,7 +1438,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum * resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
@@ -1495,7 +1537,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
       compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
@@ -1509,7 +1551,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 <= compare2 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1549,7 +1591,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
       compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
@@ -1563,7 +1605,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 < compare2 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1603,7 +1645,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
       compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
@@ -1617,7 +1659,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 >= compare2 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1657,7 +1699,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
       compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
@@ -1671,7 +1713,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 > compare2 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1711,7 +1753,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
       compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
@@ -1725,7 +1767,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         compare2 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         if ( compare1 != compare2 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1799,7 +1841,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == STRING ) {
       compare1 = judgeNode->tokenName ;
     } // if : string
     
@@ -1813,7 +1855,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+      if ( judgeNode->tokenType == STRING ) {
         compare2 = judgeNode->tokenName ;
         if ( strcmp( compare1.c_str(), compare2.c_str() ) <= 0 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1853,7 +1895,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == STRING ) {
       compare1 = judgeNode->tokenName ;
     } // if : string
     
@@ -1867,7 +1909,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+      if ( judgeNode->tokenType == STRING ) {
         compare2 = judgeNode->tokenName ;
         if ( strcmp( compare1.c_str(), compare2.c_str() ) >= 0 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1907,7 +1949,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == STRING ) {
       compare1 = judgeNode->tokenName ;
     } // if : string
     
@@ -1921,7 +1963,7 @@ class Project {
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+      if ( judgeNode->tokenType == STRING ) {
         compare2 = judgeNode->tokenName ;
         if ( strcmp( compare1.c_str(), compare2.c_str() ) != 0 ) isNil  = true ;
         compare1 = compare2 ;
@@ -1961,7 +2003,6 @@ class Project {
     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
       if ( AtomJudge( compare1->tokenType ) && AtomJudge( compare2->tokenType ) &&
            compare1->tokenType != STRING && compare2->tokenType != STRING &&
-           !compare1->fromQuote && !compare2->fromQuote &&
            compare1->tokenName == compare2->tokenName  ) {
         resultNode->tokenName = "#t" ;
         resultNode->tokenType = T ;
@@ -1986,44 +2027,44 @@ class Project {
     } // else : node compare
 
     return  resultNode ;
-  } // Is_Equal()
+  } // Is_Eqv()
 
 
-   TokenTree* Is_Equal( TokenTree *currentNode ) {
-     TokenTree* resultNode = new TokenTree ;
-     TokenTree* compare1 = NULL ;
-     TokenTree* compare2 = NULL ;
-     InitialNode( resultNode ) ;
-     CheckParameterNum( currentNode, 2, "equal?" ) ;
+  TokenTree* Is_Equal( TokenTree *currentNode ) {
+    TokenTree* resultNode = new TokenTree ;
+    TokenTree* compare1 = NULL ;
+    TokenTree* compare2 = NULL ;
+    InitialNode( resultNode ) ;
+    CheckParameterNum( currentNode, 2, "equal?" ) ;
 
-     compare1 = EvaluateSExp( currentNode->rightNode->leftNode ) ;
-     compare2 = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+    compare1 = EvaluateSExp( currentNode->rightNode->leftNode ) ;
+    compare2 = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
 
-     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
-       if ( compare1->tokenName == compare2->tokenName  ) {
-         resultNode->tokenName = "#t" ;
-         resultNode->tokenType = T ;
-       } // if : same token ,not quote string
+    if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
+      if ( compare1->tokenName == compare2->tokenName  ) {
+        resultNode->tokenName = "#t" ;
+        resultNode->tokenType = T ;
+      } // if : same token ,not quote string
 
-       else  {
-         resultNode->tokenName = "nil" ;
-         resultNode->tokenType = NIL ;
-       } // else not same token
-     } // if : token compare
+      else  {
+        resultNode->tokenName = "nil" ;
+        resultNode->tokenType = NIL ;
+      } // else not same token
+    } // if : token compare
 
-     else {
-       if ( CompareTwoTrees( compare1, compare2 ) ) {
-         resultNode->tokenName = "#t" ;
-         resultNode->tokenType = T ;
-       } // if : same node
+    else {
+      if ( CompareTwoTrees( compare1, compare2 ) || compare1 == compare2 ) {
+        resultNode->tokenName = "#t" ;
+        resultNode->tokenType = T ;
+      } // if : same node
 
-       else  {
-         resultNode->tokenName = "nil" ;
-         resultNode->tokenType = NIL ;
-       } // else not same node
-     } // else : node compare
+      else  {
+        resultNode->tokenName = "nil" ;
+        resultNode->tokenType = NIL ;
+      } // else not same node
+    } // else : node compare
 
-     return  resultNode ;
+    return  resultNode ;
   } // Is_Equal()
 
   TokenTree* Begin( TokenTree *currentNode ) {
@@ -2055,7 +2096,7 @@ class Project {
         resultNode = EvaluateSExp( currentNode->rightNode->rightNode->rightNode->leftNode ) ;
       else {
         cout << "ERROR (no return value) : " ;
-        PrintEvaluateErrorTree(currentNode) ;
+        PrintEvaluateErrorTree( currentNode ) ;
         throw Exception( NO_RETURN_VAL_ERROR ) ;
       } // else : nothing can return -> throw
     } // else : return second parameter
@@ -2085,11 +2126,12 @@ class Project {
         PrintEvaluateErrorTree( currentNode ) ;
         throw Exception( FORMAT_ERROR ) ;
       } // if : nothing can return : or parameter non list
+
       num++ ;
     } // while : check parameter type
 
     walkNode = currentNode->rightNode ;
-    for ( int i = 0; i < num-1; i++ ) {
+    for ( int i = 0; i < num - 1 ; i++ ) {
       judgeNode = EvaluateSExp( walkNode->leftNode->leftNode ) ;
       if ( judgeNode->tokenType != NIL ) {
         walkParameterNode = walkNode->leftNode ;
@@ -2100,6 +2142,7 @@ class Project {
 
         return  resultNode ;
       } // if
+
       walkNode = walkNode->rightNode ;
     } // for : check num-1 parameter can return
 
@@ -2127,7 +2170,7 @@ class Project {
 
       else {
         cout << "ERROR (no return value) : " ;
-        PrintEvaluateErrorTree(currentNode) ;
+        PrintEvaluateErrorTree( currentNode ) ;
         throw Exception( FORMAT_ERROR ) ;
       } // else : no return value
 
@@ -2139,6 +2182,11 @@ class Project {
   TokenTree* Clean_Env( TokenTree *currentNode ) {
     TokenTree* resultNode = new TokenTree ;
     InitialNode( resultNode ) ;
+    if ( currentNode != gTreeRoot ) {
+      cout <<  "ERROR (level of CLEAN-ENVIRONMENT)" << endl << endl ;
+      throw Exception( LEVEL_OF_DEFINE ) ;
+    } // if : level of define
+
     resultNode->tokenName = "environment cleaned" ;
     gDefineSymbols.clear();
 
@@ -2241,7 +2289,7 @@ class Project {
 
             else {
               cout << "ERROR (attempt to apply non-function) : " ;
-              PrintEvaluateErrorTree(defined.binding) ;
+              PrintEvaluateErrorTree( defined.binding ) ;
               throw Exception( NO_APPLY_ERROR ) ;
             } // else : define is a node-> error
           } // if : is in definition
@@ -2259,7 +2307,8 @@ class Project {
         } // if : check is Function
         
         else {
-          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName << endl << endl ;
+          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
+               << endl << endl ;
           throw Exception( NO_APPLY_ERROR ) ;
         } // else : no apply error
       } // if
