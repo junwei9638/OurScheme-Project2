@@ -833,14 +833,6 @@ class Project {
           else cout << currentNode->tokenName << endl;
         } // if : not nil print
 
-        if ( layer > 1 ) {
-          lineReturn = true;
-          layer--;
-          for ( int i = 0 ; i < layer ; i++ )
-            cout << "  " ;
-          cout << ")" << endl;
-        } // if : print right paren
-
       } // else : . node case
     } // if
 
