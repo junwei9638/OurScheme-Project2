@@ -59,7 +59,7 @@ enum Error {
   LEFT_ERROR, RIGHT_ERROR, CLOSE_ERROR, EOF_ERROR, NO_ERROR, NOT_S_EXP_ERROR,
   PARAMETER_NUM_ERROR, PARAMETER_TYPE_ERROR, UNBOND_ERROR, NO_APPLY_ERROR,
   NO_RETURN_VAL_ERROR, DIVISION_BY_ZERO_ERROR, FORMAT_ERROR, NON_LIST_ERROR,
-  LEVEL_OF_DEFINE
+  LEVEL_ERROR
 }; // Error
 
 vector<Token> gTokens;
@@ -277,7 +277,7 @@ class Project {
     if ( num != needNum ) {
       if ( functionName == "define" ) {
         cout << "ERROR (DEFINE format) : " ;
-        PrintEvaluateErrorTree( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( PARAMETER_NUM_ERROR ) ;
       } // if : define format
       
@@ -296,7 +296,7 @@ class Project {
       else if ( functionName == "cond" ) {
         if ( num < needNum ) {
           cout << "ERROR (COND format) : " ;
-          PrintEvaluateErrorTree( currentNode ) ;
+          PrintEvaluateErrorTree( currentNode, true ) ;
           throw Exception( FORMAT_ERROR ) ;
         } // if : not >= needNum
       } // if : cond format
@@ -316,13 +316,12 @@ class Project {
     
   } // CheckParameterNum()
 
-  bool CompareTwoTrees( TokenTree* compare1, TokenTree* compare2 ) {
-    static bool isSame = true ;
+  bool CompareTwoTrees( TokenTree* compare1, TokenTree* compare2, bool& isSame ) {
     if ( strcmp( compare1->tokenName.c_str(), compare2->tokenName.c_str() ) != 0 )
       isSame = false ;
 
     if ( ( compare1->leftNode && compare2->leftNode ) )
-      CompareTwoTrees( compare1->leftNode, compare2->leftNode ) ;
+      CompareTwoTrees( compare1->leftNode, compare2->leftNode, isSame ) ;
     else if ( ( compare1->leftNode && !compare2->leftNode ) ||
               ( !compare1->leftNode && compare2->leftNode ) ) {
       if ( compare1->leftNode && compare1->leftNode->tokenType != NIL )
@@ -332,7 +331,7 @@ class Project {
     } // if
 
     if ( ( compare1->rightNode && compare2->rightNode ) )
-      CompareTwoTrees( compare1->rightNode, compare2->rightNode ) ;
+      CompareTwoTrees( compare1->rightNode, compare2->rightNode, isSame ) ;
     else if ( ( compare1->rightNode && !compare2->rightNode ) ||
               ( !compare1->rightNode && compare2->rightNode ) ) {
       if ( compare1->rightNode && compare1->rightNode->tokenType != NIL )
@@ -814,23 +813,25 @@ class Project {
         lineReturn = true;
       } // if : leftNode
       
-      else if ( currentNode->tokenType != NIL ) {
-        for ( int i = 0 ; i < layer ; i++ )
-          cout << "  " ;
-        cout << "." << endl;
-        for ( int i = 0 ; i < layer ; i++ )
-          cout << "  " ;
-        if ( IsFunction( currentNode->tokenName ) && !isError ) {
-          cout << "#<procedure " ;
-          cout << currentNode->tokenName << ">" << endl;
-        } // if : is Function
+      else  {
+        if ( currentNode->tokenType != NIL ) {
+          for ( int i = 0 ; i < layer ; i++ )
+            cout << "  ";
+          cout << "." << endl;
+          for ( int i = 0 ; i < layer ; i++ )
+            cout << "  ";
+          if ( IsFunction( currentNode->tokenName ) && !isError ) {
+            cout << "#<procedure ";
+            cout << currentNode->tokenName << ">" << endl;
+          } // if : is Function
 
-        else if ( currentNode->tokenType == FLOAT ) {
-          cout << fixed << setprecision( 3 )
-               << round( atof( currentNode->tokenName.c_str() ) * 1000 ) / 1000 << endl;
-        } // if : float print
+          else if ( currentNode->tokenType == FLOAT ) {
+            cout << fixed << setprecision( 3 )
+                 << round( atof( currentNode->tokenName.c_str() ) * 1000 ) / 1000 << endl;
+          } // if : float print
 
-        else cout << currentNode->tokenName << endl;
+          else cout << currentNode->tokenName << endl;
+        } // if : not nil print
 
         if ( layer > 1 ) {
           lineReturn = true;
@@ -839,7 +840,8 @@ class Project {
             cout << "  " ;
           cout << ")" << endl;
         } // if : print right paren
-      } // if : . node case
+
+      } // else : . node case
     } // if
 
     if ( currentNode->leftNode )
@@ -891,6 +893,16 @@ class Project {
     cout << endl ;
   } // PrintFunctionMsg()
 
+  void PrintNode( TokenTree* currentNode ) {
+    if ( currentNode->tokenType == FLOAT ) {
+      cout << fixed << setprecision( 3 )
+           << round( atof( currentNode->tokenName.c_str() ) * 1000 ) / 1000 ;
+    } // if : float print
+
+    else cout << currentNode->tokenName ;
+
+  } // PrintNode()
+
 
   void PrintErrorMessage() {
     if ( gErrorMsgType == LEFT_ERROR || gErrorMsgType == NOT_S_EXP_ERROR )
@@ -909,9 +921,9 @@ class Project {
       cout << "ERROR (no more input) : END-OF-FILE encountered";
   } // PrintErrorMessage()
 
-  void PrintEvaluateErrorTree( TokenTree* errorNode ) {
+  void PrintEvaluateErrorTree( TokenTree* errorNode, bool isError ) {
     int layer = 0 ;
-    PrintSExpTree( errorNode, false, layer, true );
+    PrintSExpTree( errorNode, false, layer, isError );
     for ( int i = 0 ; i < layer ; i++ )
       cout << ")" << endl;
 
@@ -944,13 +956,13 @@ class Project {
     if ( currentNode->rightNode->leftNode->tokenType != SYMBOL ||
          IsFunction( currentNode->rightNode->leftNode->tokenName ) ) {
       cout << "ERROR (DEFINE format) : " ;
-      PrintEvaluateErrorTree( currentNode ) ;
+      PrintEvaluateErrorTree( currentNode, true ) ;
       throw Exception( FORMAT_ERROR ) ;
     } // if : first token is not symbol or is a function
 
     if ( currentNode != gTreeRoot ) {
       cout <<  "ERROR (level of DEFINE)" << endl << endl ;
-      throw Exception( LEVEL_OF_DEFINE ) ;
+      throw Exception( LEVEL_ERROR ) ;
     } // if : level of define
 
     defined.symbolName = currentNode->rightNode->leftNode->tokenName ;
@@ -991,7 +1003,9 @@ class Project {
     
     walkNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     if ( walkNode->tokenName != "\0" ) {
-      cout << "ERROR (car with incorrect argument type) : " + walkNode->tokenName << endl << endl ;
+      cout << "ERROR (car with incorrect argument type) : " ;
+      PrintNode( walkNode ) ;
+      cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
 
@@ -1006,7 +1020,9 @@ class Project {
     
     walkNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     if ( walkNode->tokenName != "\0" ) {
-      cout << "ERROR (cdr with incorrect argument type) : " + walkNode->tokenName << endl << endl ;
+      cout << "ERROR (cdr with incorrect argument type) : " ;
+      PrintNode( walkNode ) ;
+      cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // if : parameter type
     
@@ -1277,7 +1293,7 @@ class Project {
       
       else {
         cout << "ERROR (+ with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
@@ -1335,7 +1351,7 @@ class Project {
       
       else {
         cout << "ERROR (- with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
@@ -1398,7 +1414,7 @@ class Project {
       
       else {
         cout << "ERROR (/ with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
@@ -1446,7 +1462,7 @@ class Project {
       
       else {
         cout << "ERROR (* with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw Exception
@@ -1543,7 +1559,7 @@ class Project {
     
     else {
       cout << "ERROR (> with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1559,7 +1575,7 @@ class Project {
       
       else {
         cout << "ERROR (> with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1597,7 +1613,7 @@ class Project {
     
     else {
       cout << "ERROR (>= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1613,7 +1629,7 @@ class Project {
       
       else {
         cout << "ERROR (>= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1651,7 +1667,7 @@ class Project {
     
     else {
       cout << "ERROR (< with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1667,7 +1683,7 @@ class Project {
       
       else {
         cout << "ERROR (< with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1705,7 +1721,7 @@ class Project {
     
     else {
       cout << "ERROR (<= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1721,7 +1737,7 @@ class Project {
       
       else {
         cout << "ERROR (<= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1759,7 +1775,7 @@ class Project {
     
     else {
       cout << "ERROR (= with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1775,7 +1791,7 @@ class Project {
       
       else {
         cout << "ERROR (= with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1812,8 +1828,9 @@ class Project {
       } // if : string
       
       else {
-        cout << "ERROR (string-append with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        cout << "ERROR (string-append with incorrect argument type) : " ;
+        PrintNode( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1846,8 +1863,9 @@ class Project {
     } // if : string
     
     else {
-      cout << "ERROR (string>? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      cout << "ERROR (string>? with incorrect argument type) : "  ;
+      PrintNode( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1862,8 +1880,9 @@ class Project {
       } // if : string
       
       else {
-        cout << "ERROR (string>? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        cout << "ERROR (string>? with incorrect argument type) : " ;
+        PrintNode( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1900,8 +1919,9 @@ class Project {
     } // if : string
     
     else {
-      cout << "ERROR (string<? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      cout << "ERROR (string<? with incorrect argument type) : " ;
+      PrintNode( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1916,8 +1936,9 @@ class Project {
       } // if : int or float
       
       else {
-        cout << "ERROR (string<? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        cout << "ERROR (string<? with incorrect argument type) : " ;
+        PrintNode( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -1954,8 +1975,9 @@ class Project {
     } // if : string
     
     else {
-      cout << "ERROR (string=? with incorrect argument type) : " + judgeNode->tokenName ;
-      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+      cout << "ERROR (string=? with incorrect argument type) : " ;
+      PrintNode( judgeNode ) ;
+      if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
       else cout << endl << endl ;
       throw Exception( PARAMETER_TYPE_ERROR ) ;
     } // else : throw exception
@@ -1970,8 +1992,9 @@ class Project {
       } // if : int or float
       
       else {
-        cout << "ERROR (string=? with incorrect argument type) : " + judgeNode->tokenName ;
-        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode ) ;
+        cout << "ERROR (string=? with incorrect argument type) : " ;
+        PrintNode( judgeNode ) ;
+        if ( judgeNode->tokenName == "\0" ) PrintEvaluateErrorTree( judgeNode, true ) ;
         else cout << endl << endl ;
         throw Exception( PARAMETER_TYPE_ERROR ) ;
       } // else : throw exception
@@ -2034,6 +2057,7 @@ class Project {
     TokenTree* resultNode = new TokenTree ;
     TokenTree* compare1 = NULL ;
     TokenTree* compare2 = NULL ;
+    bool isSame = true ;
     InitialNode( resultNode ) ;
     CheckParameterNum( currentNode, 2, "equal?" ) ;
 
@@ -2053,7 +2077,8 @@ class Project {
     } // if : token compare
 
     else {
-      if ( CompareTwoTrees( compare1, compare2 ) || compare1 == compare2 ) {
+      isSame = CompareTwoTrees( compare1, compare2, isSame ) ;
+      if ( isSame || compare1 == compare2 ) {
         resultNode->tokenName = "#t" ;
         resultNode->tokenType = T ;
       } // if : same node
@@ -2096,7 +2121,7 @@ class Project {
         resultNode = EvaluateSExp( currentNode->rightNode->rightNode->rightNode->leftNode ) ;
       else {
         cout << "ERROR (no return value) : " ;
-        PrintEvaluateErrorTree( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( NO_RETURN_VAL_ERROR ) ;
       } // else : nothing can return -> throw
     } // else : return second parameter
@@ -2117,13 +2142,13 @@ class Project {
       walkNode = walkNode->rightNode ;
       if ( walkNode->leftNode->tokenName != "\0" ) {
         cout << "ERROR (COND format) : " ;
-        PrintEvaluateErrorTree( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( FORMAT_ERROR ) ;
       } // if : parameter is not node
 
       if ( !walkNode->leftNode->rightNode || !CheckNonList( walkNode->leftNode ) ) {
         cout << "ERROR (COND format) : " ;
-        PrintEvaluateErrorTree( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( FORMAT_ERROR ) ;
       } // if : nothing can return : or parameter non list
 
@@ -2170,7 +2195,7 @@ class Project {
 
       else {
         cout << "ERROR (no return value) : " ;
-        PrintEvaluateErrorTree( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( FORMAT_ERROR ) ;
       } // else : no return value
 
@@ -2184,7 +2209,7 @@ class Project {
     InitialNode( resultNode ) ;
     if ( currentNode != gTreeRoot ) {
       cout <<  "ERROR (level of CLEAN-ENVIRONMENT)" << endl << endl ;
-      throw Exception( LEVEL_OF_DEFINE ) ;
+      throw Exception( LEVEL_ERROR ) ;
     } // if : level of define
 
     resultNode->tokenName = "environment cleaned" ;
@@ -2194,7 +2219,13 @@ class Project {
   } // Clean_Env()
 
   TokenTree* Exit( TokenTree *currentNode ) {
+    if ( currentNode != gTreeRoot ) {
+      cout <<  "ERROR (level of EXIT)" << endl << endl ;
+      throw Exception( LEVEL_ERROR ) ;
+    } // if : level of define
+
     CheckParameterNum( currentNode, 0, "exit" ) ;
+
     return NULL ;
   } // Exit()*/
 
@@ -2269,13 +2300,13 @@ class Project {
         TokenTree* judgeNode = NULL ;
         judgeNode = EvaluateSExp( currentNode->leftNode ) ;
         
-        if ( IsFunction( judgeNode->tokenName ) ) currentNode->leftNode = judgeNode ;
-        else return judgeNode;
+        currentNode->leftNode = judgeNode ;
+        // else return judgeNode;
       } // if : duoble paren
 
       if ( !CheckNonList( currentNode ) ) {
         cout << "ERROR (non-list) : " ;
-        PrintEvaluateErrorTree( currentNode ) ;
+        PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( NON_LIST_ERROR ) ;
       } // if : Non list check
 
@@ -2289,7 +2320,7 @@ class Project {
 
             else {
               cout << "ERROR (attempt to apply non-function) : " ;
-              PrintEvaluateErrorTree( defined.binding ) ;
+              PrintEvaluateErrorTree( defined.binding, true ) ;
               throw Exception( NO_APPLY_ERROR ) ;
             } // else : define is a node-> error
           } // if : is in definition
@@ -2307,7 +2338,12 @@ class Project {
         } // if : check is Function
         
         else {
-          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
+          if ( currentNode->leftNode->tokenName == "\0" && currentNode->leftNode->leftNode ) {
+            cout << "ERROR (attempt to apply non-function) : " ;
+            PrintEvaluateErrorTree( currentNode->leftNode, false ) ;
+          } // if : left node apply non function
+
+          else cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
                << endl << endl ;
           throw Exception( NO_APPLY_ERROR ) ;
         } // else : no apply error
@@ -2342,6 +2378,11 @@ int main() {
           
           try {
             gTreeRoot = project.EvaluateSExp( gTreeRoot ) ;
+            // for ( int i = 0; i < gTokens.size() ; i++ ) {
+            // cout << gTokens[i].tokenName ;
+            // } // for
+
+            // cout << endl ;
             project.PrintFunctionMsg() ;
           } // try
           catch( Exception e ) {
