@@ -851,9 +851,7 @@ class Project {
       PrintSExpTree( currentNode->rightNode, true, layer, isError );
 
     if ( layer > 1 && currentNode->tokenName == "\0" &&
-         ( currentNode->rightNode == NULL ||
-           ( currentNode->leftNode->tokenName != "\0" &&
-             currentNode->rightNode->tokenName != "\0" ) ) ) {
+         ( currentNode->rightNode == NULL || currentNode->rightNode->tokenName != "\0" ) ) {
       lineReturn = true;
       layer--;
       for ( int i = 0 ; i < layer ; i++ )
