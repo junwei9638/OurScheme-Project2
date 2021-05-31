@@ -833,14 +833,6 @@ class Project {
           else cout << currentNode->tokenName << endl;
         } // if : not nil print
 
-        if ( layer > 1 ) {
-          lineReturn = true;
-          layer--;
-          for ( int i = 0 ; i < layer ; i++ )
-            cout << "  " ;
-          cout << ")" << endl;
-        } // if : print right paren
-
       } // else : . node case
     } // if
 
@@ -851,7 +843,9 @@ class Project {
       PrintSExpTree( currentNode->rightNode, true, layer, isError );
 
     if ( layer > 1 && currentNode->tokenName == "\0" &&
-         ( currentNode->rightNode == NULL || currentNode->rightNode->tokenName != "\0" ) ) {
+         ( ( currentNode->leftNode && currentNode->leftNode->tokenName != "\0" &&
+             currentNode->rightNode == NULL ) ||
+             ( currentNode->rightNode && currentNode->rightNode->tokenName != "\0" ) ) ) {
       lineReturn = true;
       layer--;
       for ( int i = 0 ; i < layer ; i++ )
@@ -884,8 +878,12 @@ class Project {
     
     else if ( gTreeRoot != NULL ) {
       PrintSExpTree( gTreeRoot, false, layer, false );
-      for ( int i = 0 ; i < layer ; i++ )
+      while ( layer > 0  ) {
+        layer--;
+        for ( int i = 0 ; i < layer ; i++ )
+          cout << "  " ;
         cout << ")" << endl;
+      } // while : print indent and layer
     } // if
 
     cout << endl ;
@@ -922,8 +920,12 @@ class Project {
   void PrintEvaluateErrorTree( TokenTree* errorNode, bool isError ) {
     int layer = 0 ;
     PrintSExpTree( errorNode, false, layer, isError );
-    for ( int i = 0 ; i < layer ; i++ )
+    while ( layer > 0  ) {
+      layer--;
+      for ( int i = 0 ; i < layer ; i++ )
+        cout << "  " ;
       cout << ")" << endl;
+    } // while : print indent and layer
 
     cout << endl  ;
   } // PrintEvaluateErrorTree()
