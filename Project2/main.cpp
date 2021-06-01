@@ -679,8 +679,9 @@ class Project {
           return true;
         } // if :push right paren
         else {
-          SetErrorMsg( LEFT_ERROR, gTokens.back().tokenName,
-                       gTokens.back().tokenLine, gTokens.back().tokenColumn );
+          if ( gErrorMsgType == NOT_S_EXP_ERROR )
+            SetErrorMsg( LEFT_ERROR, gTokens.back().tokenName,
+                         gTokens.back().tokenLine, gTokens.back().tokenColumn );
           return false;
         } // else
       } // if
