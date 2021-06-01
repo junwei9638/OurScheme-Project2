@@ -30,8 +30,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1989"
-            endingLineNumber = "1989"
+            startingLineNumber = "1985"
+            endingLineNumber = "1985"
             landmarkName = "Is_Str_Equal(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
@@ -46,8 +46,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1266"
-            endingLineNumber = "1266"
+            startingLineNumber = "1262"
+            endingLineNumber = "1262"
             landmarkName = "Is_Symbol(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
@@ -62,9 +62,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1210"
-            endingLineNumber = "1210"
-            landmarkName = "Is_Str(currentNode)"
+            startingLineNumber = "1206"
+            endingLineNumber = "1206"
+            landmarkName = "Is_Num(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -78,8 +78,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1717"
-            endingLineNumber = "1717"
+            startingLineNumber = "1713"
+            endingLineNumber = "1713"
             landmarkName = "LessEqual(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
@@ -94,8 +94,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2024"
-            endingLineNumber = "2024"
+            startingLineNumber = "2020"
+            endingLineNumber = "2020"
             landmarkName = "Is_Eqv(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
@@ -110,8 +110,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2071"
-            endingLineNumber = "2071"
+            startingLineNumber = "2067"
+            endingLineNumber = "2067"
             landmarkName = "Is_Equal(currentNode)"
             landmarkType = "7">
          </BreakpointContent>
@@ -126,9 +126,9 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "786"
-            endingLineNumber = "786"
-            landmarkName = "PrintSExpTree(currentNode, isRightNode, layer, isError)"
+            startingLineNumber = "782"
+            endingLineNumber = "782"
+            landmarkName = "ReadSExp()"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -142,8 +142,8 @@
             filePath = "Project2/main.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "846"
-            endingLineNumber = "846"
+            startingLineNumber = "842"
+            endingLineNumber = "842"
             landmarkName = "PrintSExpTree(currentNode, isRightNode, layer, isError)"
             landmarkType = "7">
          </BreakpointContent>
