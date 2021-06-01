@@ -679,6 +679,7 @@ class Project {
           return true;
         } // if :push right paren
         else {
+          // if ( gErrorMsgType == NOT_S_EXP_ERROR  )
           SetErrorMsg( LEFT_ERROR, gTokens.back().tokenName,
                        gTokens.back().tokenLine, gTokens.back().tokenColumn );
           return false;
@@ -843,9 +844,8 @@ class Project {
       PrintSExpTree( currentNode->rightNode, true, layer, isError );
 
     if ( layer > 1 && currentNode->tokenName == "\0" &&
-         ( ( currentNode->leftNode && currentNode->leftNode->tokenName != "\0" &&
-             currentNode->rightNode == NULL ) ||
-             ( currentNode->rightNode && currentNode->rightNode->tokenName != "\0" ) ) ) {
+         ( currentNode->rightNode == NULL  ||
+           ( currentNode->rightNode && currentNode->rightNode->tokenName != "\0" ) ) ) {
       lineReturn = true;
       layer--;
       for ( int i = 0 ; i < layer ; i++ )
@@ -2378,11 +2378,6 @@ int main() {
           
           try {
             gTreeRoot = project.EvaluateSExp( gTreeRoot ) ;
-            // for ( int i = 0; i < gTokens.size() ; i++ ) {
-            // cout << gTokens[i].tokenName ;
-            // } // for
-
-            // cout << endl ;
             project.PrintFunctionMsg() ;
           } // try
           catch( Exception e ) {
