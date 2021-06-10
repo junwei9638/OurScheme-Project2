@@ -35,22 +35,6 @@ struct DefineSymbol {
 }; // DefineSymbol Symbol
 
 
-enum FunctionType {
-  CONS, LIST,
-  FUNC_QUOTE,
-  DEFINE,
-  CAR, CDR,
-  IS_ATOM, IS_PAIR, IS_LIST, IS_NULL, IS_INT, IS_REAL, IS_NUM, IS_STR, IS_BOOL, IS_SYMBOL,
-  PLUS, MINUS, DIV, MULT,
-  NOT, AND, OR,
-  GREATER, GREATEREQUAL, LESS, LESSEQUAL, EQUAL,
-  STR_APPEND, IS_STR_GREATER, IS_STR_LESS, IS_STR_EQUAL,
-  IS_EQV, IS_EQUAL,
-  BEGIN,
-  IF, COND,
-  CLEAR_ENV
-}; // FunctionType
-
 enum TokenType {
   INT, STRING, DOT, FLOAT, NIL, T, QUOTE, SYMBOL, LEFTPAREN, RIGHTPAREN, NO_TYPE
 }; // TokenType
@@ -459,6 +443,10 @@ class Project {
       } // for                                                           // Num Judge
 
       if ( signBit > 1 || digitBit == 0 || dotBit > 1 ) isNum = false;
+
+      if ( signBit == 1 ) {
+        if ( atomExp[0] != '+' && atomExp[0] != '-' ) isNum = false;
+      } // if
 
       gAtomType = SYMBOL;
       if ( isNum && !isSymbol ) atomExp = NumProcess( atomExp );
@@ -1287,7 +1275,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote  ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum + resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
@@ -1337,7 +1325,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
         if ( firstNum ) {
           resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
@@ -1394,7 +1382,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
         if ( firstNum ) {
           resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
@@ -1456,7 +1444,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum * resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
@@ -1555,7 +1543,7 @@ class Project {
     
     walkNode = walkNode->rightNode ;
     judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
+    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT )  ) {
       compare1 = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
     } // if : int or float
     
@@ -2028,6 +2016,7 @@ class Project {
     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
       if ( AtomJudge( compare1->tokenType ) && AtomJudge( compare2->tokenType ) &&
            compare1->tokenType != STRING && compare2->tokenType != STRING &&
+           !compare1->fromQuote && !compare2->fromQuote &&
            compare1->tokenName == compare2->tokenName  ) {
         resultNode->tokenName = "#t" ;
         resultNode->tokenType = T ;
@@ -2068,8 +2057,30 @@ class Project {
 
     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
       if ( compare1->tokenName == compare2->tokenName  ) {
-        resultNode->tokenName = "#t" ;
-        resultNode->tokenType = T ;
+        if ( compare1->fromQuote ) {
+          if ( compare2->fromQuote ) {
+            resultNode->tokenName = "#t";
+            resultNode->tokenType = T;
+          } // if
+
+          else {
+            resultNode->tokenName = "nil" ;
+            resultNode->tokenType = NIL ;
+          } // else
+        } // if
+
+        else if ( !compare1->fromQuote ) {
+          if ( !compare2->fromQuote ) {
+            resultNode->tokenName = "#t";
+            resultNode->tokenType = T;
+          } // if
+
+          else {
+            resultNode->tokenName = "nil" ;
+            resultNode->tokenType = NIL ;
+          } // else
+        } // if
+
       } // if : same token ,not quote string
 
       else  {
@@ -2303,7 +2314,7 @@ class Project {
         judgeNode = EvaluateSExp( currentNode->leftNode ) ;
         
         currentNode->leftNode = judgeNode ;
-        // else return judgeNode;
+        if ( currentNode->leftNode->rightNode == NULL ) return judgeNode;
       } // if : duoble paren
 
       if ( !CheckNonList( currentNode ) ) {
@@ -2340,12 +2351,17 @@ class Project {
         } // if : check is Function
         
         else {
+          /*
           if ( currentNode->leftNode->tokenName == "\0" && currentNode->leftNode->leftNode ) {
             cout << "ERROR (attempt to apply non-function) : " ;
             PrintEvaluateErrorTree( currentNode->leftNode, false ) ;
           } // if : left node apply non function
 
           else cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
+               << endl << endl ;
+          throw Exception( NO_APPLY_ERROR ) ;
+          */
+          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
                << endl << endl ;
           throw Exception( NO_APPLY_ERROR ) ;
         } // else : no apply error
