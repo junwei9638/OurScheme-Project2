@@ -180,23 +180,25 @@ class Project {
 
   // ------------------JudgeMent Function--------------------- //
   bool ExitDetect() {
-    int nilExit = -1;
-    int exitNil = -1;
-    string tokenString = "\0";
 
+    int nilExit = -1 ;
+    int exitNil = -1 ;
+    string tokenString = "\0" ;
+    
     for ( int i = 0 ; i < gTokens.size() ; i++ )
-      tokenString += gTokens[i].tokenName;
-
-    nilExit = ( int ) tokenString.find( "(nil.exit)" );
-    exitNil = ( int ) tokenString.find( "(exit.nil)" );
-
-    if ( tokenString == "(exit)" || nilExit != -1 || exitNil != -1 ) {
-      gIsEnd = true;
-      return true;
+      tokenString += gTokens[i].tokenName ;
+    
+    nilExit = ( int ) tokenString.find( "(nil.exit)" ) ;
+    exitNil = ( int ) tokenString.find( "(exit.nil)" ) ;
+    
+    if ( ( tokenString == "(exit)" && gTokens.size() == 3 ) ||
+         ( nilExit != -1 && gTokens.size() == 5 ) ||
+         ( exitNil != -1 && gTokens.size() == 5 ) ) {
+      gIsEnd = true ;
+      return true ;
     } // if
 
-
-    return false;
+    return false ;
   } // ExitDetect()
 
   bool AtomJudge( int typeNum ) {
@@ -1275,7 +1277,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote  ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum + resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
@@ -1325,7 +1327,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         if ( firstNum ) {
           resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
@@ -1382,7 +1384,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         if ( firstNum ) {
           resultFloat = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
           firstNum = false ;
@@ -1444,7 +1446,7 @@ class Project {
       walkNode = walkNode->rightNode;
 
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+      if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum * resultFloat;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
@@ -2314,7 +2316,6 @@ class Project {
         judgeNode = EvaluateSExp( currentNode->leftNode ) ;
         
         currentNode->leftNode = judgeNode ;
-        if ( currentNode->leftNode->rightNode == NULL ) return judgeNode;
       } // if : duoble paren
 
       if ( !CheckNonList( currentNode ) ) {
@@ -2351,16 +2352,19 @@ class Project {
         } // if : check is Function
         
         else {
-          /*
+        
           if ( currentNode->leftNode->tokenName == "\0" && currentNode->leftNode->leftNode ) {
+            TokenTree* walkNode = currentNode ;
+            while ( walkNode->leftNode->tokenName == "\0" ) {
+              walkNode = walkNode->leftNode ;
+            } // while
+            
             cout << "ERROR (attempt to apply non-function) : " ;
-            PrintEvaluateErrorTree( currentNode->leftNode, false ) ;
+            PrintEvaluateErrorTree( walkNode, false ) ;
+            throw Exception( NO_APPLY_ERROR ) ;
           } // if : left node apply non function
-
-          else cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
-               << endl << endl ;
-          throw Exception( NO_APPLY_ERROR ) ;
-          */
+          
+          
           cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
                << endl << endl ;
           throw Exception( NO_APPLY_ERROR ) ;
