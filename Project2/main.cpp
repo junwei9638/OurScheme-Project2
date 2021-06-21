@@ -165,7 +165,9 @@ class Project {
       if ( tokenName == gDefineSymbols[i].symbolName ) {
         temp.symbolName = gDefineSymbols[i].symbolName;
         temp.binding = gDefineSymbols[i].binding;
+        return temp;
       } // if
+      
     } // for
 
     return temp;
@@ -944,7 +946,14 @@ class Project {
     DefineSymbol defined  ;
     InitialNode( resultNode ) ;
     
+    
+    if ( currentNode != gTreeRoot ) {
+      cout <<  "ERROR (level of DEFINE)" << endl << endl ;
+      throw Exception( LEVEL_ERROR ) ;
+    } // if : level of define
+    
     CheckParameterNum( currentNode, 2, "define" ) ;
+    
     if ( currentNode->rightNode->leftNode->tokenType != SYMBOL ||
          IsFunction( currentNode->rightNode->leftNode->tokenName ) ) {
       cout << "ERROR (DEFINE format) : " ;
@@ -952,15 +961,20 @@ class Project {
       throw Exception( FORMAT_ERROR ) ;
     } // if : first token is not symbol or is a function
 
-    if ( currentNode != gTreeRoot ) {
-      cout <<  "ERROR (level of DEFINE)" << endl << endl ;
-      throw Exception( LEVEL_ERROR ) ;
-    } // if : level of define
 
-    defined.symbolName = currentNode->rightNode->leftNode->tokenName ;
-    defined.binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
-
-    gDefineSymbols.push_back( defined ) ;
+    if ( CheckDefinition( currentNode->rightNode->leftNode->tokenName ) ) {
+      for ( int i = 0 ; i < gDefineSymbols.size() ; i++ ) {
+        if ( gDefineSymbols[i].symbolName == currentNode->rightNode->leftNode->tokenName ) {
+          gDefineSymbols[i].binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+        } // if
+      } // for
+    } // if : already define
+    
+    else {
+      defined.symbolName = currentNode->rightNode->leftNode->tokenName ;
+      defined.binding = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+      gDefineSymbols.push_back( defined ) ;
+    } // else
 
     resultNode->tokenName = currentNode->rightNode->leftNode->tokenName + " defined" ;
     return resultNode ;
@@ -1041,7 +1055,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( AtomJudge( judgeNode->tokenType ) && !judgeNode->fromQuote ) {
+    if ( AtomJudge( judgeNode->tokenType ) ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1093,7 +1107,7 @@ class Project {
       if ( walkNode->tokenName != "\0" ) isList = false ;
     } // while : check right token
     
-    if ( judgeNode && isList ) {
+    if ( judgeNode->tokenName == "\0" && isList ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1137,7 +1151,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( judgeNode->tokenType == INT && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == INT ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1159,8 +1173,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) &&
-         !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1182,7 +1195,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1204,7 +1217,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+    if ( judgeNode->tokenType == STRING ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1226,7 +1239,7 @@ class Project {
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( ( judgeNode->tokenType == T || judgeNode->tokenType == NIL ) && !judgeNode->fromQuote ) {
+    if (  judgeNode->tokenType == T || judgeNode->tokenType == NIL ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T ;
     } // if : is atom
@@ -1487,7 +1500,9 @@ class Project {
     CheckParameterNum( currentNode, 1, "not" ) ;
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( judgeNode->tokenName == "nil" && !judgeNode->fromQuote ) {
+    if ( ( judgeNode->tokenName == "nil" && !judgeNode->fromQuote ) ||
+         ( judgeNode->tokenType == INT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ||
+         ( judgeNode->tokenType == FLOAT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T;
     } // if
@@ -1813,7 +1828,7 @@ class Project {
     while ( walkNode->rightNode != NULL ) {
       walkNode = walkNode->rightNode ;
       judgeNode = EvaluateSExp( walkNode->leftNode ) ;
-      if ( judgeNode->tokenType == STRING && !judgeNode->fromQuote ) {
+      if ( judgeNode->tokenType == STRING ) {
         judgeNode->tokenName.erase( judgeNode->tokenName.begin() );
         judgeNode->tokenName.resize( judgeNode->tokenName.size()-1 );
         resultTokenName = resultTokenName + judgeNode->tokenName ;
@@ -2018,7 +2033,6 @@ class Project {
     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
       if ( AtomJudge( compare1->tokenType ) && AtomJudge( compare2->tokenType ) &&
            compare1->tokenType != STRING && compare2->tokenType != STRING &&
-           !compare1->fromQuote && !compare2->fromQuote &&
            compare1->tokenName == compare2->tokenName  ) {
         resultNode->tokenName = "#t" ;
         resultNode->tokenType = T ;
@@ -2093,7 +2107,7 @@ class Project {
 
     else {
       isSame = CompareTwoTrees( compare1, compare2, isSame ) ;
-      if ( isSame || compare1 == compare2 ) {
+      if ( isSame ) {
         resultNode->tokenName = "#t" ;
         resultNode->tokenType = T ;
       } // if : same node
@@ -2127,11 +2141,10 @@ class Project {
 
     CheckParameterNum( currentNode, 2, "if" ) ;
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
-    if ( judgeNode->tokenType != NIL ) {
-      resultNode = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
-    } // if : return first parameter
-
-    else {
+    if ( judgeNode->tokenType == NIL ||
+         ( judgeNode->tokenType == INT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ||
+         ( judgeNode->tokenType == FLOAT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ) {
+    
       if ( currentNode->rightNode->rightNode->rightNode )
         resultNode = EvaluateSExp( currentNode->rightNode->rightNode->rightNode->leftNode ) ;
       else {
@@ -2139,7 +2152,11 @@ class Project {
         PrintEvaluateErrorTree( currentNode, true ) ;
         throw Exception( NO_RETURN_VAL_ERROR ) ;
       } // else : nothing can return -> throw
-    } // else : return second parameter
+    } // if : return second parameter
+
+    else {
+      resultNode = EvaluateSExp( currentNode->rightNode->rightNode->leftNode ) ;
+    } // else : return first parameter
 
     return  resultNode ;
   } // If()
@@ -2173,7 +2190,9 @@ class Project {
     walkNode = currentNode->rightNode ;
     for ( int i = 0; i < num - 1 ; i++ ) {
       judgeNode = EvaluateSExp( walkNode->leftNode->leftNode ) ;
-      if ( judgeNode->tokenType != NIL ) {
+      if ( judgeNode->tokenType != NIL &&
+           ! ( judgeNode->tokenType == INT && atoi( judgeNode->tokenName.c_str() ) == 0 ) &&
+           ! ( judgeNode->tokenType == FLOAT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ) {
         walkParameterNode = walkNode->leftNode ;
         while ( walkParameterNode->rightNode ) {
           walkParameterNode = walkParameterNode->rightNode ;
@@ -2198,7 +2217,9 @@ class Project {
 
     else {
       judgeNode = EvaluateSExp( walkNode->leftNode->leftNode ) ;
-      if ( judgeNode->tokenType != NIL ) {
+      if ( judgeNode->tokenType != NIL &&
+           ! ( judgeNode->tokenType == INT && atoi( judgeNode->tokenName.c_str() ) == 0 ) &&
+           ! ( judgeNode->tokenType == FLOAT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ) {
         walkParameterNode = walkNode->leftNode ;
         while ( walkParameterNode->rightNode ) {
           walkParameterNode = walkParameterNode->rightNode ;
@@ -2313,9 +2334,20 @@ class Project {
     else {
       if ( currentNode->leftNode->tokenName == "\0" ) {
         TokenTree* judgeNode = NULL ;
+        TokenTree* judgeNode2 = NULL ;
         judgeNode = EvaluateSExp( currentNode->leftNode ) ;
         
-        currentNode->leftNode = judgeNode ;
+        if ( judgeNode->leftNode && IsFunction( judgeNode->leftNode->tokenName ) ) {
+          judgeNode2 = EvaluateSExp( judgeNode ) ;
+          if ( judgeNode2->tokenName == "\0" ) {
+            cout << "ERROR (attempt to apply non-function) : " ;
+            PrintEvaluateErrorTree( judgeNode, false ) ;
+            throw Exception( NO_APPLY_ERROR ) ;
+          } // if
+        } // if
+        
+        
+        else currentNode->leftNode = judgeNode ;
       } // if : duoble paren
 
       if ( !CheckNonList( currentNode ) ) {
@@ -2324,52 +2356,37 @@ class Project {
         throw Exception( NON_LIST_ERROR ) ;
       } // if : Non list check
 
-      if ( currentNode->needToBePrimitive == true ) {
-        if ( currentNode->leftNode->tokenType == SYMBOL ) {
-          if ( CheckDefinition( currentNode->leftNode->tokenName ) ) {
-            DefineSymbol defined = GetDefineSymbol( currentNode->leftNode->tokenName ) ;
-            if ( defined.binding->tokenName != "\0" ) {
-              currentNode->leftNode = defined.binding ;
-            } // if : define is a token
-
-            else {
-              cout << "ERROR (attempt to apply non-function) : " ;
-              PrintEvaluateErrorTree( defined.binding, true ) ;
-              throw Exception( NO_APPLY_ERROR ) ;
-            } // else : define is a node-> error
-          } // if : is in definition
+      if ( currentNode->leftNode->tokenType == SYMBOL ) {
+        if ( CheckDefinition( currentNode->leftNode->tokenName ) ) {
+          DefineSymbol defined = GetDefineSymbol( currentNode->leftNode->tokenName ) ;
+          if ( defined.binding->tokenName != "\0" ) {
+            currentNode->leftNode = defined.binding ;
+          } // if : define is a token
 
           else {
-            if ( !IsFunction( currentNode->leftNode->tokenName ) ) {
-              cout << "ERROR (unbound symbol) : " + currentNode->leftNode->tokenName << endl << endl  ;
-              throw Exception( UNBOND_ERROR ) ;
-            } // if
-          } // else : throw exception
-        } // if : if is SYMBOL　
-
-        if ( IsFunction( currentNode->leftNode->tokenName ) ) {
-          currentNode = FindCorrespondFunction( currentNode, currentNode->leftNode->tokenName ) ;
-        } // if : check is Function
-        
-        else {
-        
-          if ( currentNode->leftNode->tokenName == "\0" && currentNode->leftNode->leftNode ) {
-            TokenTree* walkNode = currentNode ;
-            while ( walkNode->leftNode->tokenName == "\0" ) {
-              walkNode = walkNode->leftNode ;
-            } // while
-            
             cout << "ERROR (attempt to apply non-function) : " ;
-            PrintEvaluateErrorTree( walkNode, false ) ;
+            PrintEvaluateErrorTree( defined.binding, true ) ;
             throw Exception( NO_APPLY_ERROR ) ;
-          } // if : left node apply non function
-          
-          
-          cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
-               << endl << endl ;
-          throw Exception( NO_APPLY_ERROR ) ;
-        } // else : no apply error
-      } // if
+          } // else : define is a node-> error
+        } // if : is in definition
+
+        else {
+          if ( !IsFunction( currentNode->leftNode->tokenName ) ) {
+            cout << "ERROR (unbound symbol) : " + currentNode->leftNode->tokenName << endl << endl  ;
+            throw Exception( UNBOND_ERROR ) ;
+          } // if
+        } // else : throw exception
+      } // if : if is SYMBOL
+
+      if ( IsFunction( currentNode->leftNode->tokenName ) ) {
+        currentNode = FindCorrespondFunction( currentNode, currentNode->leftNode->tokenName ) ;
+      } // if : check is Function
+      
+      else {
+        cout << "ERROR (attempt to apply non-function) : " + currentNode->leftNode->tokenName
+             << endl << endl ;
+        throw Exception( NO_APPLY_ERROR ) ;
+      } // else : no apply error
       
       
     } // else left node
