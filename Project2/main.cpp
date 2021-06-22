@@ -186,16 +186,21 @@ class Project {
     int nilExit = -1 ;
     int exitNil = -1 ;
     string tokenString = "\0" ;
+    bool isNil = false ;
+    bool isExit = false ;
     
-    for ( int i = 0 ; i < gTokens.size() ; i++ )
+    for ( int i = 0 ; i < gTokens.size() ; i++ ) {
       tokenString += gTokens[i].tokenName ;
+      if ( gTokens[i].tokenTypeNum == NIL ) isNil = true ;
+      if ( gTokens[i].tokenName == "exit" ) isExit = true ;
+    } // for
     
     nilExit = ( int ) tokenString.find( "(nil.exit)" ) ;
     exitNil = ( int ) tokenString.find( "(exit.nil)" ) ;
     
-    if ( ( tokenString == "(exit)" && gTokens.size() == 3 ) ||
-         ( nilExit != -1 && gTokens.size() == 5 ) ||
-         ( exitNil != -1 && gTokens.size() == 5 ) ) {
+    if ( ( tokenString == "(exit)" && gTokens.size() == 3 && isExit ) ||
+         ( nilExit != -1 && gTokens.size() == 5 && isExit && isNil ) ||
+         ( exitNil != -1 && gTokens.size() == 5 && isExit && isNil ) ) {
       gIsEnd = true ;
       return true ;
     } // if
