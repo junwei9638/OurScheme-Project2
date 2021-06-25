@@ -798,8 +798,7 @@ class Project {
 
     if ( currentNode->tokenName != "\0" ) {
       if ( !isRightNode ) {
-        if ( IsFunction( currentNode->tokenName ) && !isError &&
-             !currentNode->fromQuote ) {
+        if ( IsFunction( currentNode->tokenName ) && !isError  ) {
           cout << "#<procedure " ;
           cout << currentNode->tokenName << ">" << endl;
         } // if : is Function
