@@ -1283,7 +1283,6 @@ class Project {
     float inputNum = 0.0;
     float resultFloat = 0.0;
     bool isFloat = false;
-    int inputInt = 0 ;
     stringstream sstream;
     TokenTree *walkNode = currentNode;
     TokenTree *judgeNode = NULL;
@@ -1297,8 +1296,6 @@ class Project {
       if ( ( judgeNode->tokenType == INT || judgeNode->tokenType == FLOAT ) ) {
         inputNum = round( atof( judgeNode->tokenName.c_str() ) * 1000 ) / 1000;
         resultFloat = inputNum + resultFloat;
-        if ( judgeNode->tokenType == INT )
-          inputInt = inputInt + atoi( judgeNode->tokenName.c_str() ) ;
         if ( judgeNode->tokenType == FLOAT ) isFloat = true;
       } // if : int or float
       
@@ -1320,7 +1317,7 @@ class Project {
     } // if : float result
     else {
       resultInt = ( int ) resultFloat;
-      sstream << inputInt ;
+      sstream << resultInt;
       string resultString = sstream.str();
       resultNode->tokenName = resultString ;
       resultNode->tokenType = INT ;
@@ -1506,7 +1503,7 @@ class Project {
     CheckParameterNum( currentNode, 1, "not" ) ;
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( judgeNode->tokenName == "nil"  ) {
+    if ( judgeNode->tokenType == NIL  ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T;
     } // if
