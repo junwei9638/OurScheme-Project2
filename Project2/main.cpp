@@ -317,10 +317,7 @@ class Project {
       CompareTwoTrees( compare1->leftNode, compare2->leftNode, isSame ) ;
     else if ( ( compare1->leftNode && !compare2->leftNode ) ||
               ( !compare1->leftNode && compare2->leftNode ) ) {
-      if ( compare1->leftNode && compare1->leftNode->tokenType != NIL )
-        isSame = false;
-      if ( compare2->leftNode && compare2->leftNode->tokenType != NIL )
-        isSame = false;
+      isSame = false ;
     } // if
 
     if ( ( compare1->rightNode && compare2->rightNode ) )
@@ -798,7 +795,7 @@ class Project {
 
     if ( currentNode->tokenName != "\0" ) {
       if ( !isRightNode ) {
-        if ( IsFunction( currentNode->tokenName ) && !isError  ) {
+        if ( IsFunction( currentNode->tokenName ) && !isError && !currentNode->fromQuote  ) {
           cout << "#<procedure " ;
           cout << currentNode->tokenName << ">" << endl;
         } // if : is Function
@@ -941,6 +938,7 @@ class Project {
   }  // Cons()
   
   TokenTree* Quote( TokenTree* currentNode ) {
+    CheckParameterNum( currentNode, 1, "quote" ) ;
     SetFromQuote( currentNode->rightNode->leftNode ) ;
     return currentNode->rightNode->leftNode;
   } // Quote()
@@ -985,20 +983,21 @@ class Project {
   } // Define()
 
   TokenTree* List( TokenTree* currentNode ) {
+    TokenTree* walkNode = currentNode ;
     TokenTree* resultNode = new TokenTree ;
     TokenTree* resultWalkNode = resultNode ;
     InitialNode( resultNode ) ;
     
-    if ( currentNode->rightNode ) {
-      currentNode = currentNode->rightNode ;
-      resultWalkNode->leftNode = EvaluateSExp( currentNode->leftNode ) ;
+    if ( walkNode->rightNode ) {
+      walkNode = walkNode->rightNode ;
+      resultWalkNode->leftNode = EvaluateSExp( walkNode->leftNode ) ;
     } // if : connect to left node
     
-    while ( currentNode->rightNode ) {
-      currentNode = currentNode->rightNode ;
+    while ( walkNode->rightNode ) {
+      walkNode = walkNode->rightNode ;
       resultWalkNode->rightNode = new TokenTree ;
       InitialNode( resultWalkNode->rightNode ) ;
-      resultWalkNode->rightNode->leftNode = EvaluateSExp( currentNode->leftNode ) ;
+      resultWalkNode->rightNode->leftNode = EvaluateSExp( walkNode->leftNode ) ;
       resultWalkNode = resultWalkNode->rightNode ;
     } // while
     
@@ -1261,7 +1260,7 @@ class Project {
     resultNode = new TokenTree ;
     InitialNode( resultNode ) ;
     TokenTree* judgeNode = NULL ;
-    CheckParameterNum( currentNode, 1, "number?" ) ;
+    CheckParameterNum( currentNode, 1, "symbol?" ) ;
     
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
@@ -1504,9 +1503,7 @@ class Project {
     CheckParameterNum( currentNode, 1, "not" ) ;
     judgeNode = EvaluateSExp( currentNode->rightNode->leftNode ) ;
     
-    if ( ( judgeNode->tokenName == "nil" && !judgeNode->fromQuote ) ||
-         ( judgeNode->tokenType == INT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ||
-         ( judgeNode->tokenType == FLOAT && atoi( judgeNode->tokenName.c_str() ) == 0 ) ) {
+    if ( judgeNode->tokenName == "nil"  ) {
       resultNode->tokenName = "#t" ;
       resultNode->tokenType = T;
     } // if
@@ -1531,7 +1528,6 @@ class Project {
       if ( judgeNode->tokenType == NIL ) return judgeNode;
     } // while
       
-    judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     return judgeNode;
   } // And()
 
@@ -1547,7 +1543,6 @@ class Project {
       if ( judgeNode->tokenType != NIL ) return judgeNode;
     } // while
       
-    judgeNode = EvaluateSExp( walkNode->leftNode ) ;
     return judgeNode;
   } // Or()
 
@@ -2063,7 +2058,6 @@ class Project {
     return  resultNode ;
   } // Is_Eqv()
 
-
   TokenTree* Is_Equal( TokenTree *currentNode ) {
     TokenTree* resultNode = new TokenTree ;
     TokenTree* compare1 = NULL ;
@@ -2077,30 +2071,8 @@ class Project {
 
     if ( compare1->tokenName != "\0" && compare2->tokenName != "\0" ) {
       if ( compare1->tokenName == compare2->tokenName  ) {
-        if ( compare1->fromQuote ) {
-          if ( compare2->fromQuote ) {
-            resultNode->tokenName = "#t";
-            resultNode->tokenType = T;
-          } // if
-
-          else {
-            resultNode->tokenName = "nil" ;
-            resultNode->tokenType = NIL ;
-          } // else
-        } // if
-
-        else if ( !compare1->fromQuote ) {
-          if ( !compare2->fromQuote ) {
-            resultNode->tokenName = "#t";
-            resultNode->tokenType = T;
-          } // if
-
-          else {
-            resultNode->tokenName = "nil" ;
-            resultNode->tokenType = NIL ;
-          } // else
-        } // if
-
+        resultNode->tokenName = "#t";
+        resultNode->tokenType = T ;
       } // if : same token ,not quote string
 
       else  {
@@ -2132,9 +2104,10 @@ class Project {
 
     while ( walkNode->rightNode ) {
       walkNode = walkNode->rightNode ;
-      resultNode = EvaluateSExp( walkNode->leftNode );
+
     } // while : walk every parameter
 
+    resultNode = EvaluateSExp( walkNode->leftNode );
     return  resultNode ;
 
   } // Begin()
